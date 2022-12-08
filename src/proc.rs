@@ -14,3 +14,17 @@ pub fn get_filename() -> String {
 	let filename: String = String::from(&args[1]);
 	filename
 }
+
+pub fn serialize(data: String) {
+	let mut chars = data.chars();
+	let mut item = chars.next();
+	let mut character: char;
+	while item!=None {
+		character = match item {
+			Some(c) => c,
+			None => '!' // this will never occur
+		};
+		println!("{:?}", character);
+		item = chars.next();
+	}
+}
