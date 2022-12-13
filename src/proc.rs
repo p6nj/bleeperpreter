@@ -34,8 +34,8 @@ pub fn get_filename() -> String {
 }
 
 pub fn serialize(data: String) {
-	let mut chars = data.chars();
-	let mut characters = vec![&chars.next()];
+	let chars = &mut data.chars();
+	let mut character = chars.next();
 
 	let mut song = Song {
 		title: String::new(),
@@ -45,48 +45,43 @@ pub fn serialize(data: String) {
 		bpm: 60
 	};
 
-	while !characters[0].is_none() {
+	while !character.is_none() {
 		
 		match
-			match characters[0].unwrap() {
+			match character.unwrap() {
 				't'	=>	{
-					characters.push(&chars.next());
-					match characters[1].unwrap() {
+					let character = &chars.next();
+					if character.is_none() {break;}
+					match character.unwrap() {
 						'i'	=>	{ // title
-							chars.skip_while(|x| x!=&':');
-							chars.skip_while(|x| x==&' ');
-							characters.push(&chars.next());
-							if characters[2].unwrap()=='\n' {panic(0u8);}
-							while characters[2].unwrap()!='\n' {
-								match chars.next().unwrap() {
-									' '	=>	continue,
-									not_a_space	=>	{
-										song.title.push(match not_a_space {
-											'\\'	=>	{
-												match chars.next().unwrap() {
-													'n'			=>	'\n',
-													other	=>	other
-												}
-											}
-											anything	=>	anything
-										});
+							let mut chars = chars.as_str().strip_prefix("tle:").expect("Expected title header.").trim_start().chars();
+							let mut character = chars.nth(0);
+							if character.unwrap()=='\n' {panic(0u8);}
+							while character.unwrap()!='\n' {
+								if character.is_none() {break;}
+								song.title.push(match character.unwrap() {
+									'\\'	=>	{
+										match chars.next().unwrap() {
+											'n'			=>	'\n',
+											other	=>	other
+										}
 									}
-								};
-							};
-							"Title: {song.title}"
+									anything	=>	anything
+								});
+								character = chars.next();
+							} println!("Modified title: '{}'", song.title);
 						},
-						_	=>	""
+						_	=>	()
 					}
 				},
-				_	=>	""
+				_	=>	()
 			}
 
 			{
-				str	=>	println!("{:?}", str),
-				_ => continue
+				_ => ()
 			};
 		
-			characters = vec![&chars.next()];
+		character = chars.next();
 
-		};
-	}
+	};
+}
