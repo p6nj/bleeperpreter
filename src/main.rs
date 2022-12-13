@@ -1,9 +1,10 @@
+// TODO: use anyhow for error handling https://crates.io/crates/anyhow
+mod doc;
 mod file;
 mod proc;
-mod doc;
 
 fn main() {
-	let filename = proc::get_filename();
-	let data = file::read_file(filename);
-	proc::serialize(data);
+    let filename = proc::get_filename();
+    let data = file::read_file(filename);
+    proc::serialize(data);
 }

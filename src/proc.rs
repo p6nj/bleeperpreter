@@ -1,5 +1,3 @@
-use std::default;
-
 use crate::doc::{panic, USAGE};
 
 enum Word {
@@ -50,7 +48,7 @@ pub fn serialize(data: String) {
     let mut tempo = 60u16;
 
     while !character.is_none() {
-        match match character.unwrap() {
+        match character.unwrap() {
             't' => {
                 let character = &chars.next();
                 if character.is_none() {
@@ -65,7 +63,7 @@ pub fn serialize(data: String) {
                             .expect("Expected title header.")
                             .trim_start()
                             .chars();
-                        let mut character = chars.nth(0);
+                        let mut character = chars.next();
                         if character.unwrap() == '\n' {
                             panic(0u8);
                         }
@@ -89,7 +87,7 @@ pub fn serialize(data: String) {
                             .expect("Expected tempo header.")
                             .trim_start()
                             .chars();
-                        let mut character = chars.nth(0);
+                        let mut character = chars.next();
                         if character.unwrap() == '\n' {
                             panic(1u8);
                         }
@@ -130,10 +128,8 @@ pub fn serialize(data: String) {
                 }
             }
             _ => (),
-        } {
-            _ => (),
         };
-
+        ();
         character = chars.next();
     }
 }
