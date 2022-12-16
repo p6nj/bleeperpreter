@@ -74,6 +74,7 @@ pub fn get_filename() -> Result<String> {
 pub fn serialize(data: String) -> Result<()> {
     let chars = &mut data.chars();
     let mut character = chars.next();
+    let mut line = 0u32;
 
     let mut song = Song {
         title: String::new(),
@@ -100,12 +101,12 @@ pub fn serialize(data: String) -> Result<()> {
                         let mut chars = chars
                             .as_str()
                             .strip_prefix("tle:")
-                            .context("Expected title header")?
+                            .with_context(|| format!("Expected title header: {line}"))?
                             .trim_start()
                             .chars();
                         let mut character = chars.next();
                         ensure(character.unwrap() != '\n')
-                            .context("Expected a header value on same line")?;
+                            .with_context(|| format!("Expected header value: {line}"))?;
                         while character.unwrap() != '\n' {
                             song.title.push(match character.unwrap() {
                                 '\\' => match chars.next().unwrap() {
@@ -116,6 +117,7 @@ pub fn serialize(data: String) -> Result<()> {
                             });
                             character = chars.next();
                         }
+                        line += 1;
                         println!("Modified title: '{}'", song.title);
                     }
                     'e' => {
@@ -123,30 +125,28 @@ pub fn serialize(data: String) -> Result<()> {
                         let mut chars = chars
                             .as_str()
                             .strip_prefix("mpo:")
-                            .context("Expected tempo header")?
+                            .with_context(|| format!("Expected tempo header: {line}"))?
                             .trim_start()
                             .chars();
                         let mut character = chars.next();
                         ensure(character.unwrap() != '\n')
-                            .context("Expected a tempo value on same line")?;
+                            .with_context(|| format!("Expected a tempo value: {line}"))?;
                         let mut numerator = 0u16; // why isn't it called nominator?
                         let mut denominator = 4u16;
                         while character.unwrap() != '\n' {
                             match character.unwrap() {
                                 '/' => {
-                                    ensure(numerator != 0)
-                                        .context("Expected a valid numerator first")?;
+                                    ensure(numerator != 0).with_context(|| {
+                                        format!("Expected a valid numerator first: {line}")
+                                    })?;
                                     denominator = 0;
                                     character = chars.next();
                                     while character.unwrap() != '\n' {
-                                        // if !character.unwrap().is_ascii_digit() {
-                                        //     panic(3u8)
-                                        // }
                                         denominator = denominator * 10
                                             + (character
                                                 .unwrap()
                                                 .to_digit(10)
-                                                .with_context(|| format!("Cannot convert denominator character {:?} to digit", character))?
+                                                .with_context(|| format!("Cannot convert denominator character {:?} to digit: {line}", character))?
                                                 as u16);
                                         character = chars.next();
                                     }
@@ -158,6 +158,7 @@ pub fn serialize(data: String) -> Result<()> {
                                 }
                             }
                             character = chars.next();
+                            line += 1;
                         }
                         // the bpm is always the numerator, the denominator will be used for real tempo
                         // for example, 'tempo: 120/2' means that the BPM is 120 but one beat is a duple note (x2 faster)
@@ -168,6 +169,7 @@ pub fn serialize(data: String) -> Result<()> {
                     _ => (),
                 }
             }
+            '\n' => line += 1,
             _ => (),
         };
         character = chars.next();
