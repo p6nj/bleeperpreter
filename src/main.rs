@@ -1,10 +1,11 @@
-// TODO: use anyhow for error handling https://crates.io/crates/anyhow
+use anyhow::{Context, Result};
 mod doc;
 mod file;
 mod proc;
 
-fn main() {
-    let filename = proc::get_filename();
-    let data = file::read_file(filename);
+fn main() -> Result<()> {
+    let filename = proc::get_filename().context("Cannot find the filename in args")?;
+    let data = file::read_file(filename).context("Cannot process file data")?;
     proc::serialize(data);
+    Ok(())
 }

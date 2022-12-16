@@ -1,15 +1,10 @@
 use std::fs;
 
-pub fn read_file(filename: String) -> String {
-	let data: String = match fs::read_to_string(filename) {
-    	Ok(string)=> string,
-    	Err(error)=> panic!("error reading file: {}", error)
-    };
-    let mut parsed_data: String = match data.parse() {
-    	Ok(string)=> string,
-    	Err(error)=> panic!("error parsing file: {}", error)
-    };
-    assert_eq!(data, parsed_data);
+use anyhow::{Context, Result};
+
+pub fn read_file(filename: String) -> Result<String> {
+    let data: String = fs::read_to_string(filename).context("error reading the file data")?;
+    let mut parsed_data: String = data.parse().context("error parsing the file data")?;
     parsed_data.pop(); // the last line is always empty
-    parsed_data
+    Ok(parsed_data)
 }
