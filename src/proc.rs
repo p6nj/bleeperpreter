@@ -1,20 +1,23 @@
 use crate::doc;
 use anyhow::{Context, Result};
 use std::process::exit;
-#[allow(dead_code)]
+
+#[derive(Debug)]
 enum Word {
     L(u8),
     O(u8),
     N(u8),
 }
-#[allow(dead_code)]
+
+#[derive(Debug)]
 struct Channel {
     title: String,
     words: Vec<Word>,
 }
-#[allow(dead_code)]
+
+#[derive(Debug)]
 /// A song with some info to include in the exported audio file metadata.
-struct Song {
+pub struct Song {
     /// The title of the song (for metadata)
     title: String,
     /// The author of the song (for metadata)
@@ -70,8 +73,7 @@ pub fn get_filename() -> Result<String> {
     Ok(filename)
 }
 
-#[allow(clippy::single_match)]
-pub fn serialize(data: String) -> Result<()> {
+pub fn serialize(data: String) -> Result<Song> {
     let chars = &mut data.chars();
     let mut character = chars.next();
     let mut line = 0u32;
@@ -85,11 +87,27 @@ pub fn serialize(data: String) -> Result<()> {
         tuning: 55f64 * 2f64.powf(1f64 / 12f64), // occidental default for C1
     };
 
-    #[allow(unused_assignments)]
     let mut tempo = 60u16; // real tempo, in quarter note per second
 
     while character.is_some() {
         match character.unwrap() {
+            'a' => {
+                // author
+                let mut chars = chars
+                    .as_str()
+                    .strip_prefix("uthor:")
+                    .with_context(|| format!("Expected author header: {line}"))?
+                    .trim_start()
+                    .chars();
+                let mut character = chars.next();
+                ensure(character.unwrap() != '\n')
+                    .with_context(|| format!("Expected author value: {line}"))?;
+                while character.unwrap() != '\n' {
+                    song.author.push(character.unwrap());
+                    character = chars.next();
+                }
+                line += 1;
+            }
             't' => {
                 let character = &chars.next();
                 if character.is_none() {
@@ -106,7 +124,7 @@ pub fn serialize(data: String) -> Result<()> {
                             .chars();
                         let mut character = chars.next();
                         ensure(character.unwrap() != '\n')
-                            .with_context(|| format!("Expected header value: {line}"))?;
+                            .with_context(|| format!("Expected title value: {line}"))?;
                         while character.unwrap() != '\n' {
                             song.title.push(match character.unwrap() {
                                 '\\' => match chars.next().unwrap() {
@@ -118,7 +136,6 @@ pub fn serialize(data: String) -> Result<()> {
                             character = chars.next();
                         }
                         line += 1;
-                        println!("Modified title: '{}'", song.title);
                     }
                     'e' => {
                         // tempo
@@ -130,14 +147,14 @@ pub fn serialize(data: String) -> Result<()> {
                             .chars();
                         let mut character = chars.next();
                         ensure(character.unwrap() != '\n')
-                            .with_context(|| format!("Expected a tempo value: {line}"))?;
+                            .with_context(|| format!("Expected tempo value: {line}"))?;
                         let mut numerator = 0u16; // why isn't it called nominator?
                         let mut denominator = 4u16;
                         while character.unwrap() != '\n' {
                             match character.unwrap() {
                                 '/' => {
                                     ensure(numerator != 0).with_context(|| {
-                                        format!("Expected a valid numerator first: {line}")
+                                        format!("Expected valid numerator first: {line}")
                                     })?;
                                     denominator = 0;
                                     character = chars.next();
@@ -146,7 +163,7 @@ pub fn serialize(data: String) -> Result<()> {
                                             + (character
                                                 .unwrap()
                                                 .to_digit(10)
-                                                .with_context(|| format!("Cannot convert denominator character {:?} to digit: {line}", character))?
+                                                .with_context(|| format!("Cannot convert denominator character {character:?} to digit: {line}"))?
                                                 as u16);
                                         character = chars.next();
                                     }
@@ -164,15 +181,18 @@ pub fn serialize(data: String) -> Result<()> {
                         // for example, 'tempo: 120/2' means that the BPM is 120 but one beat is a duple note (x2 faster)
                         song.bpm = numerator;
                         tempo = (numerator * denominator) / 4;
-                        println!("Modified tempo to {}, real tempo is {}", song.bpm, tempo);
                     }
                     _ => (),
                 }
             }
             '\n' => line += 1,
-            _ => (),
+            _ => {
+                // anything else is seen as a comment, especially if it starts by a capital letter or '/'
+                while chars.next().is_some() && chars.next() != Some('\n') {}
+                line += 1;
+            }
         };
         character = chars.next();
     }
-    Ok(())
+    Ok(song)
 }
