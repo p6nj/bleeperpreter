@@ -1,18 +1,23 @@
 use crate::doc;
 use anyhow::{Context, Result};
-use std::process::exit;
+use std::{ops::Index, process::exit};
 
 #[derive(Debug)]
-enum Word {
+enum Symbol {
+    /// Length symbol: the length of a duple note if the number is 2, a quarter note if 4 etc...
     L(u8),
+    /// Octava symbol: the pitch of the next notes will depend on it
     O(u8),
+    /// Note symbol: the number coresponds to the index of the note in the scale (starting from 1 for the frequency calculation).
     N(u8),
+    /// Rest symbol: a silent note with no additional information.
+    R,
 }
 
 #[derive(Debug)]
 struct Channel {
     title: String,
-    words: Vec<Word>,
+    symbols: Vec<Symbol>,
 }
 
 #[derive(Debug)]
@@ -24,9 +29,9 @@ pub struct Song {
     author: String,
     /// The scale of the song (for pitch rendering)
     ///
-    /// This vector of strings contain every symbol found in the scale header.
-    /// Each symbol represents a frequency from a shared and evenly distributed interval (from X to 2X)
-    scale: Vec<&'static str>,
+    /// This vector of strings contain every symbol found in the scale header; it's a string so the symbols can be made of multiple letters as in French.
+    /// Each symbol represents a frequency from a shared and evenly distributed interval (from X to 2X).
+    scale: Vec<String>,
     channels: Vec<Channel>,
     /// Beats Per Minute (**for metadata only**)
     bpm: u16,
@@ -76,20 +81,25 @@ pub fn get_filename() -> Result<String> {
 pub fn serialize(data: String) -> Result<Song> {
     let chars = &mut data.chars();
     let mut character = chars.next();
-    let mut line = 0u32;
+    let mut line = 1u32;
 
     let mut song = Song {
         title: String::new(),
         author: String::new(),
-        scale: Vec::from(["c", "C", "d", "D", "e", "f", "F", "g", "G", "a", "A", "b"]), // Blip defaults
+        scale: Vec::new(),
         channels: Vec::new(),
         bpm: 60,                                 // 1 beat per second
         tuning: 55f64 * 2f64.powf(1f64 / 12f64), // occidental default for C1
     };
 
+    for s in ["c", "C", "d", "D", "e", "f", "F", "g", "G", "a", "A", "b"] {
+        song.scale.push(String::from(s));
+    }
+
     let mut tempo = 60u16; // real tempo, in quarter note per second
 
     while character.is_some() {
+        // dbg!(character);
         match character.unwrap() {
             'a' => {
                 // author
@@ -106,7 +116,6 @@ pub fn serialize(data: String) -> Result<Song> {
                     song.author.push(character.unwrap());
                     character = chars.next();
                 }
-                line += 1;
             }
             't' => {
                 let character = &chars.next();
@@ -135,7 +144,6 @@ pub fn serialize(data: String) -> Result<Song> {
                             });
                             character = chars.next();
                         }
-                        line += 1;
                     }
                     'e' => {
                         // tempo
@@ -175,7 +183,6 @@ pub fn serialize(data: String) -> Result<Song> {
                                 }
                             }
                             character = chars.next();
-                            line += 1;
                         }
                         // the bpm is always the numerator, the denominator will be used for real tempo
                         // for example, 'tempo: 120/2' means that the BPM is 120 but one beat is a duple note (x2 faster)
@@ -185,14 +192,127 @@ pub fn serialize(data: String) -> Result<Song> {
                     _ => (),
                 }
             }
-            '\n' => line += 1,
-            _ => {
-                // anything else is seen as a comment, especially if it starts by a capital letter or '/'
-                while chars.next().is_some() && chars.next() != Some('\n') {}
-                line += 1;
+            's' => {
+                // scale
+                let mut chars = chars
+                    .as_str()
+                    .strip_prefix("cale:")
+                    .with_context(|| format!("Expected scale header: {line}"))?
+                    .trim_start()
+                    .chars();
+                let mut character = chars.next();
+                ensure(character.unwrap() != '\n')
+                    .with_context(|| format!("Expected scale value: {line}"))?;
+                let mut word = String::new();
+                while character.unwrap() != '\n' {
+                    match character.unwrap() {
+                        ',' => {
+                            ensure(!word.is_empty())
+                                .with_context(|| format!("Unexpected separator: {line}"))?;
+                            song.scale.push(String::from(word.trim()));
+                            word.clear();
+                        }
+                        c => word.push(c),
+                    }
+                    character = chars.next();
+                }
+                if !word.is_empty() {
+                    song.scale.push(String::from(word.trim()));
+                    drop(word);
+                }
             }
+            '#' => {
+                // channel
+                song.channels.push(Channel {
+                    title: String::new(),
+                    symbols: Vec::new(),
+                });
+                let nbchannels = song.channels.len() - 1;
+                let current_channel = song
+                    .channels
+                    .get_mut(nbchannels)
+                    .context("Cannot find the current channel (serious bug)")?;
+                let mut chars = chars.as_str().trim_start().chars();
+                let mut character = chars.next();
+                ensure(character.unwrap() != '\n')
+                    .with_context(|| format!("Expected channel identifier: {line}"))?;
+                while character.unwrap() != '\n' {
+                    current_channel.title.push(character.unwrap());
+                    character = chars.next();
+                }
+                line += 1; // we're now in the channel body
+                character = chars.next();
+                while character.is_some() && character.unwrap() != '#' {
+                    match character.unwrap() {
+                        'l' => {
+                            let mut length = 0u8;
+                            character = chars.next();
+                            while character.unwrap().is_ascii_digit() {
+                                length =
+                                    length * 10 + character.unwrap().to_digit(10).unwrap() as u8;
+                                character = chars.next();
+                            }
+                            current_channel.symbols.push(Symbol::L(length));
+                        }
+                        'o' => {
+                            let mut octava = 0u8;
+                            character = chars.next();
+                            while character.unwrap().is_ascii_digit() {
+                                octava =
+                                    octava * 10 + character.unwrap().to_digit(10).unwrap() as u8;
+                                character = chars.next();
+                            }
+                            current_channel.symbols.push(Symbol::O(octava));
+                        }
+                        ' ' => current_channel.symbols.push(Symbol::R),
+                        '_' => {
+                            let mut symbs = current_channel
+                                .symbols
+                                .iter()
+                                .filter(|s| matches!(s, Symbol::N(_)))
+                                .rev();
+                            current_channel.symbols.push(Symbol::N(
+                                match symbs.next().with_context(|| {
+                                    format!("No previous note to repeat with '_': {line}")
+                                })? {
+                                    &Symbol::N(d) => d,
+                                    _ => 0u8, // will never happen
+                                },
+                            ));
+                        }
+                        '/' => {
+                            character = chars.next();
+                            if character.unwrap() == '*' {
+                                // comment
+                                while character.is_some() {
+                                    match character.unwrap() {
+                                        '*' => {
+                                            character = chars.next();
+                                            if character.unwrap() == '/' {
+                                                break;
+                                            }
+                                        }
+                                        '\n' => line += 1,
+                                        _ => (),
+                                    }
+                                }
+                            }
+                        }
+                        note => current_channel.symbols.push(Symbol::N(
+                            song.scale
+                                .iter()
+                                .position(|s| s == &note.to_string())
+                                .with_context(|| format!("Unknown character {note}: {line}"))?
+                                as u8, // as U-wish
+                        )),
+                    }
+                }
+            }
+            '\n' => (),
+            _ => while chars.next().is_some() && chars.next() != Some('\n') {}, // anything else is seen as a comment, especially if it starts by a capital letter or '/'
         };
         character = chars.next();
+        line += 1;
     }
     Ok(song)
 }
