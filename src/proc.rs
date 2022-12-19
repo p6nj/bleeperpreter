@@ -1,6 +1,6 @@
 use crate::doc;
 use anyhow::{Context, Result};
-use std::{ops::Index, process::exit};
+use std::{env::args, process::exit};
 
 #[derive(Debug)]
 enum Symbol {
@@ -9,7 +9,8 @@ enum Symbol {
     /// Octava symbol: the pitch of the next notes will depend on it
     O(u8),
     /// Note symbol: the number coresponds to the index of the note in the scale (starting from 1 for the frequency calculation).
-    N(u8),
+    /// A boolean is given to know if the enveloppe should be recreated or not, depending on if it's an '_' or not.
+    N(u8, bool),
     /// Rest symbol: a silent note with no additional information.
     R,
 }
@@ -67,15 +68,12 @@ fn ensure(condition: bool) -> Option<()> {
     }
 }
 
-pub fn get_filename() -> Result<String> {
-    let args: Vec<String> = std::env::args().collect();
-    ensure(args.len() == 2).context("Expected two arguments")?;
-    if args[1] == "-h" || args[1] == "--help" {
-        println!("{}", doc::USAGE);
-        exit(0);
-    }
-    let filename: String = String::from(&args[1]);
-    Ok(filename)
+pub fn get_filenames() -> Result<(String, String)> {
+    let args: Vec<String> = args().collect();
+    Ok((
+        args.get(1).context("Expected two arguments")?.clone(),
+        args.get(2).context("Expected two arguments")?.clone(),
+    ))
 }
 
 pub fn serialize(data: String) -> Result<Song> {
@@ -243,6 +241,7 @@ pub fn serialize(data: String) -> Result<Song> {
                 line += 1; // we're now in the channel body
                 character = chars.next();
                 while character.is_some() && character.unwrap() != '#' {
+                    dbg!(character);
                     match character.unwrap() {
                         'l' => {
                             let mut length = 0u8;
@@ -264,47 +263,63 @@ pub fn serialize(data: String) -> Result<Song> {
                             }
                             current_channel.symbols.push(Symbol::O(octava));
                         }
-                        ' ' => current_channel.symbols.push(Symbol::R),
+                        ' ' => {
+                            current_channel.symbols.push(Symbol::R);
+                            character = chars.next();
+                        }
                         '_' => {
                             let mut symbs = current_channel
                                 .symbols
                                 .iter()
-                                .filter(|s| matches!(s, Symbol::N(_)))
+                                .filter(|s| matches!(s, Symbol::N(_, _)))
                                 .rev();
                             current_channel.symbols.push(Symbol::N(
                                 match symbs.next().with_context(|| {
                                     format!("No previous note to repeat with '_': {line}")
                                 })? {
-                                    &Symbol::N(d) => d,
+                                    &Symbol::N(d, _) => d,
                                     _ => 0u8, // will never happen
                                 },
+                                false,
                             ));
+                            character = chars.next();
                         }
                         '/' => {
                             character = chars.next();
-                            if character.unwrap() == '*' {
+                            if character
+                                .with_context(|| format!("Unmatched comment prefix: {line}"))?
+                                == '*'
+                            {
                                 // comment
                                 while character.is_some() {
                                     match character.unwrap() {
                                         '*' => {
                                             character = chars.next();
                                             if character.unwrap() == '/' {
+                                                character = chars.next();
                                                 break;
                                             }
                                         }
                                         '\n' => line += 1,
                                         _ => (),
                                     }
+                                    character = chars.next();
                                 }
                             }
                         }
-                        note => current_channel.symbols.push(Symbol::N(
-                            song.scale
-                                .iter()
-                                .position(|s| s == &note.to_string())
-                                .with_context(|| format!("Unknown character {note}: {line}"))?
-                                as u8, // as U-wish
-                        )),
+                        '\n' => character = chars.next(),
+                        note => {
+                            current_channel.symbols.push(Symbol::N(
+                                song.scale
+                                    .iter()
+                                    .position(|s| s == &note.to_string())
+                                    .with_context(|| {
+                                        format!("Unknown character {note:?}: {line}")
+                                    })? as u8, // as U-wish
+                                true,
+                            ));
+                            character = chars.next();
+                        }
                     }
                 }
             }
