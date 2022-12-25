@@ -1,6 +1,7 @@
-use crate::doc;
 use anyhow::{Context, Result};
-use std::{env::args, process::exit};
+use std::env::args;
+
+use crate::audio::{silence, sine};
 
 #[derive(Debug)]
 enum Symbol {
@@ -13,6 +14,25 @@ enum Symbol {
     N(u8, bool),
     /// Rest symbol: a silent note with no additional information.
     R,
+}
+
+#[derive(Debug)]
+/// The bpm is always the numerator, the denominator will be used for real tempo.
+/// For example, 'tempo: 120/2' means that the BPM is 120 but one beat is a duple note (x2 faster).
+struct Tempo {
+    numerator: u16,
+    denominator: u16,
+}
+
+trait GetReal {
+    fn get_real(&self) -> f64;
+}
+
+impl GetReal for Tempo {
+    /// Retruns the real tempo in BPM using the numerator and the denominator.
+    fn get_real(&self) -> f64 {
+        (self.numerator * self.denominator) as f64 / 4f64
+    }
 }
 
 #[derive(Debug)]
@@ -34,8 +54,8 @@ pub struct Song {
     /// Each symbol represents a frequency from a shared and evenly distributed interval (from X to 2X).
     scale: Vec<String>,
     channels: Vec<Channel>,
-    /// Beats Per Minute (**for metadata only**)
-    bpm: u16,
+    /// Tempo (for metadata and length calculation)
+    tempo: Tempo,
     /// Basic scale tuning, provide a reference for the first note of the first octave (~C1).
     ///
     /// Note that 440Hz/442Hz is the current standard tuning for A4;
@@ -86,7 +106,10 @@ pub fn serialize(data: String) -> Result<Song> {
         author: String::new(),
         scale: Vec::new(),
         channels: Vec::new(),
-        bpm: 60,                                 // 1 beat per second
+        tempo: Tempo {
+            numerator: 60,
+            denominator: 4,
+        }, // 1 quarter note per second
         tuning: 55f64 * 2f64.powf(1f64 / 12f64), // occidental default for C1
     };
 
@@ -154,18 +177,20 @@ pub fn serialize(data: String) -> Result<Song> {
                         let mut character = chars.next();
                         ensure(character.unwrap() != '\n')
                             .with_context(|| format!("Expected tempo value: {line}"))?;
-                        let mut numerator = 0u16; // why isn't it called nominator?
-                        let mut denominator = 4u16;
+                        let mut tempo = Tempo {
+                            numerator: 0,
+                            denominator: 4,
+                        };
                         while character.unwrap() != '\n' {
                             match character.unwrap() {
                                 '/' => {
-                                    ensure(numerator != 0).with_context(|| {
+                                    ensure(tempo.numerator != 0).with_context(|| {
                                         format!("Expected valid numerator first: {line}")
                                     })?;
-                                    denominator = 0;
+                                    tempo.denominator = 0;
                                     character = chars.next();
                                     while character.unwrap() != '\n' {
-                                        denominator = denominator * 10
+                                        tempo.denominator = tempo.denominator * 10
                                             + (character
                                                 .unwrap()
                                                 .to_digit(10)
@@ -176,16 +201,13 @@ pub fn serialize(data: String) -> Result<Song> {
                                     break;
                                 }
                                 default => {
-                                    numerator =
-                                        numerator * 10 + (default.to_digit(10).unwrap() as u16)
+                                    tempo.numerator = tempo.numerator * 10
+                                        + (default.to_digit(10).unwrap() as u16)
                                 }
                             }
                             character = chars.next();
                         }
-                        // the bpm is always the numerator, the denominator will be used for real tempo
-                        // for example, 'tempo: 120/2' means that the BPM is 120 but one beat is a duple note (x2 faster)
-                        song.bpm = numerator;
-                        tempo = (numerator * denominator) / 4;
+                        song.tempo = tempo;
                     }
                     _ => (),
                 }
@@ -331,3 +353,28 @@ pub fn serialize(data: String) -> Result<Song> {
     }
     Ok(song)
 }
+
+/// Render audio from song symbols. Returns a vector of channels, vectors of samples ready to be written in a wave file.
+///
+/// Only uses a linear iterator.
+pub fn render(song: Song) -> Result<Vec<f32>> {
+    let mut result: Vec<Vec<f32>> = Vec::new();
+    let (mut length, mut octave) = (4u8, 4u8);
+    let tempo = song.tempo.get_real();
+    for chan in song.channels {
+        for symb in chan.symbols {
+            match symb {
+                Symbol::L(n) => length = n,
+                Symbol::N(n, _) => result.push(sine(
+                    tempo / 60f64,
+                    song.tuning * 2f64.powf((n / song.scale.len() as u8) as f64),
+                )),
+                Symbol::O(n) => octave = n,
+                Symbol::R => result.push(silence(tempo / 60f64)),
+            };
+        }
+    }
+    Ok(merge(result))
+}
+
+fn merge(channels: Vec<Vec<f32>>) -> Vec<f32> {}
