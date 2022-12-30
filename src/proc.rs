@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use std::env::args;
 
 use crate::audio::{silence, sine};
 
@@ -89,7 +88,7 @@ fn ensure(condition: bool) -> Option<()> {
 }
 
 pub fn get_filenames() -> Result<(String, String)> {
-    let args: Vec<String> = args().collect();
+    let args: Vec<String> = std::env::args().collect();
     Ok((
         args.get(1).context("Expected two arguments")?.clone(),
         args.get(2).context("Expected two arguments")?.clone(),
@@ -97,8 +96,9 @@ pub fn get_filenames() -> Result<(String, String)> {
 }
 
 pub fn serialize(data: String) -> Result<Song> {
-    let chars = &mut data.chars();
-    let mut character = chars.next();
+    let mut chars = Vec::from(data);
+    chars.reverse();
+    let mut character = chars.pop();
     let mut line = 1u32;
 
     let mut song = Song {
@@ -117,86 +117,101 @@ pub fn serialize(data: String) -> Result<Song> {
         song.scale.push(String::from(s));
     }
 
-    let mut tempo = 60u16; // real tempo, in quarter note per second
-
     while character.is_some() {
-        // dbg!(character);
-        match character.unwrap() {
+        dbg!(character.unwrap() as char);
+        match character.unwrap() as char {
             'a' => {
                 // author
-                let mut chars = chars
-                    .as_str()
-                    .strip_prefix("uthor:")
-                    .with_context(|| format!("Expected author header: {line}"))?
-                    .trim_start()
-                    .chars();
-                let mut character = chars.next();
-                ensure(character.unwrap() != '\n')
+                chars.reverse();
+                chars.drain(..7);
+                chars.reverse();
+                character = chars.pop();
+                loop {
+                    match character.unwrap() as char {
+                        ' ' => (),
+                        '\t' => (),
+                        _ => break,
+                    };
+                    character = chars.pop();
+                }
+                ensure(character.unwrap() != b'\n')
                     .with_context(|| format!("Expected author value: {line}"))?;
-                while character.unwrap() != '\n' {
-                    song.author.push(character.unwrap());
-                    character = chars.next();
+                while character.unwrap() != b'\n' {
+                    song.author.push(character.unwrap() as char);
+                    character = chars.pop();
                 }
             }
             't' => {
-                let character = &chars.next();
+                character = chars.pop();
                 if character.is_none() {
                     break;
                 }
-                match character.unwrap() {
+                match character.unwrap() as char {
                     'i' => {
                         // title
-                        let mut chars = chars
-                            .as_str()
-                            .strip_prefix("tle:")
-                            .with_context(|| format!("Expected title header: {line}"))?
-                            .trim_start()
-                            .chars();
-                        let mut character = chars.next();
-                        ensure(character.unwrap() != '\n')
+                        chars.reverse();
+                        chars.drain(..5);
+                        chars.reverse();
+                        character = chars.pop();
+                        loop {
+                            match character.unwrap() as char {
+                                ' ' => (),
+                                '\t' => (),
+                                _ => break,
+                            };
+                            character = chars.pop();
+                        }
+                        ensure(character.unwrap() != b'\n')
                             .with_context(|| format!("Expected title value: {line}"))?;
-                        while character.unwrap() != '\n' {
-                            song.title.push(match character.unwrap() {
-                                '\\' => match chars.next().unwrap() {
+                        while character.unwrap() != b'\n' {
+                            song.title.push(match character.unwrap() as char {
+                                '\\' => match chars.pop().unwrap() as char {
                                     'n' => '\n',
                                     other => other,
                                 },
                                 anything => anything,
                             });
-                            character = chars.next();
+                            character = chars.pop();
                         }
                     }
                     'e' => {
                         // tempo
-                        let mut chars = chars
-                            .as_str()
-                            .strip_prefix("mpo:")
-                            .with_context(|| format!("Expected tempo header: {line}"))?
-                            .trim_start()
-                            .chars();
-                        let mut character = chars.next();
-                        ensure(character.unwrap() != '\n')
+                        // dbg!(*chars.last().unwrap() as char);
+                        chars.reverse();
+                        chars.drain(..5);
+                        chars.reverse();
+                        character = chars.pop();
+                        loop {
+                            match character.unwrap() as char {
+                                ' ' => (),
+                                '\t' => (),
+                                _ => break,
+                            };
+                            character = chars.pop();
+                        }
+                        dbg!(character.unwrap() as char);
+                        ensure(character.unwrap() != b'\n')
                             .with_context(|| format!("Expected tempo value: {line}"))?;
                         let mut tempo = Tempo {
                             numerator: 0,
                             denominator: 4,
                         };
-                        while character.unwrap() != '\n' {
-                            match character.unwrap() {
+                        while character.unwrap() != b'\n' {
+                            match character.unwrap() as char {
                                 '/' => {
                                     ensure(tempo.numerator != 0).with_context(|| {
                                         format!("Expected valid numerator first: {line}")
                                     })?;
                                     tempo.denominator = 0;
-                                    character = chars.next();
-                                    while character.unwrap() != '\n' {
+                                    character = chars.pop();
+                                    while character.unwrap() != b'\n' {
                                         tempo.denominator = tempo.denominator * 10
-                                            + (character
-                                                .unwrap()
+                                            + ((character
+                                                .unwrap() as char)
                                                 .to_digit(10)
                                                 .with_context(|| format!("Cannot convert denominator character {character:?} to digit: {line}"))?
                                                 as u16);
-                                        character = chars.next();
+                                        character = chars.pop();
                                     }
                                     break;
                                 }
@@ -205,7 +220,7 @@ pub fn serialize(data: String) -> Result<Song> {
                                         + (default.to_digit(10).unwrap() as u16)
                                 }
                             }
-                            character = chars.next();
+                            character = chars.pop();
                         }
                         song.tempo = tempo;
                     }
@@ -214,18 +229,23 @@ pub fn serialize(data: String) -> Result<Song> {
             }
             's' => {
                 // scale
-                let mut chars = chars
-                    .as_str()
-                    .strip_prefix("cale:")
-                    .with_context(|| format!("Expected scale header: {line}"))?
-                    .trim_start()
-                    .chars();
-                let mut character = chars.next();
-                ensure(character.unwrap() != '\n')
+                chars.reverse();
+                chars.drain(..6);
+                chars.reverse();
+                character = chars.pop();
+                loop {
+                    match character.unwrap() as char {
+                        ' ' => (),
+                        '\t' => (),
+                        _ => break,
+                    };
+                    character = chars.pop();
+                }
+                ensure(character.unwrap() != b'\n')
                     .with_context(|| format!("Expected scale value: {line}"))?;
                 let mut word = String::new();
-                while character.unwrap() != '\n' {
-                    match character.unwrap() {
+                while character.unwrap() != b'\n' {
+                    match character.unwrap() as char {
                         ',' => {
                             ensure(!word.is_empty())
                                 .with_context(|| format!("Unexpected separator: {line}"))?;
@@ -234,7 +254,7 @@ pub fn serialize(data: String) -> Result<Song> {
                         }
                         c => word.push(c),
                     }
-                    character = chars.next();
+                    character = chars.pop();
                 }
                 if !word.is_empty() {
                     song.scale.push(String::from(word.trim()));
@@ -252,42 +272,48 @@ pub fn serialize(data: String) -> Result<Song> {
                     .channels
                     .get_mut(nbchannels)
                     .context("Cannot find the current channel (serious bug)")?;
-                let mut chars = chars.as_str().trim_start().chars();
-                let mut character = chars.next();
-                ensure(character.unwrap() != '\n')
+                character = chars.pop();
+                loop {
+                    match character.unwrap() as char {
+                        ' ' => (),
+                        '\t' => (),
+                        _ => break,
+                    };
+                    character = chars.pop();
+                }
+                ensure(character.unwrap() != b'\n')
                     .with_context(|| format!("Expected channel identifier: {line}"))?;
-                while character.unwrap() != '\n' {
-                    current_channel.title.push(character.unwrap());
-                    character = chars.next();
+                while character.unwrap() != b'\n' {
+                    current_channel.title.push(character.unwrap() as char);
+                    character = chars.pop();
                 }
                 line += 1; // we're now in the channel body
-                character = chars.next();
-                while character.is_some() && character.unwrap() != '#' {
-                    dbg!(character);
-                    match character.unwrap() {
+                character = chars.pop();
+                while character.is_some() && character.unwrap() != b'#' {
+                    match character.unwrap() as char {
                         'l' => {
                             let mut length = 0u8;
-                            character = chars.next();
+                            character = chars.pop();
                             while character.unwrap().is_ascii_digit() {
-                                length =
-                                    length * 10 + character.unwrap().to_digit(10).unwrap() as u8;
-                                character = chars.next();
+                                length = length * 10
+                                    + (character.unwrap() as char).to_digit(10).unwrap() as u8;
+                                character = chars.pop();
                             }
                             current_channel.symbols.push(Symbol::L(length));
                         }
                         'o' => {
                             let mut octava = 0u8;
-                            character = chars.next();
+                            character = chars.pop();
                             while character.unwrap().is_ascii_digit() {
-                                octava =
-                                    octava * 10 + character.unwrap().to_digit(10).unwrap() as u8;
-                                character = chars.next();
+                                octava = octava * 10
+                                    + (character.unwrap() as char).to_digit(10).unwrap() as u8;
+                                character = chars.pop();
                             }
                             current_channel.symbols.push(Symbol::O(octava));
                         }
                         ' ' => {
                             current_channel.symbols.push(Symbol::R);
-                            character = chars.next();
+                            character = chars.pop();
                         }
                         '_' => {
                             let mut symbs = current_channel
@@ -304,32 +330,32 @@ pub fn serialize(data: String) -> Result<Song> {
                                 },
                                 false,
                             ));
-                            character = chars.next();
+                            character = chars.pop();
                         }
                         '/' => {
-                            character = chars.next();
+                            character = chars.pop();
                             if character
                                 .with_context(|| format!("Unmatched comment prefix: {line}"))?
-                                == '*'
+                                == b'*'
                             {
                                 // comment
                                 while character.is_some() {
-                                    match character.unwrap() {
+                                    match character.unwrap() as char {
                                         '*' => {
-                                            character = chars.next();
-                                            if character.unwrap() == '/' {
-                                                character = chars.next();
+                                            character = chars.pop();
+                                            if character.unwrap() == b'/' {
+                                                character = chars.pop();
                                                 break;
                                             }
                                         }
                                         '\n' => line += 1,
                                         _ => (),
                                     }
-                                    character = chars.next();
+                                    character = chars.pop();
                                 }
                             }
                         }
-                        '\n' => character = chars.next(),
+                        '\n' => character = chars.pop(),
                         note => {
                             current_channel.symbols.push(Symbol::N(
                                 song.scale
@@ -340,15 +366,15 @@ pub fn serialize(data: String) -> Result<Song> {
                                     })? as u8, // as U-wish
                                 true,
                             ));
-                            character = chars.next();
+                            character = chars.pop();
                         }
                     }
                 }
             }
             '\n' => (),
-            _ => while chars.next().is_some() && chars.next() != Some('\n') {}, // anything else is seen as a comment, especially if it starts by a capital letter or '/'
+            _ => while chars.pop().is_some() && chars.pop() != Some(b'\n') {}, // anything else is seen as a comment, especially if it starts by a capital letter or '/'
         };
-        character = chars.next();
+        character = chars.pop();
         line += 1;
     }
     Ok(song)
@@ -357,24 +383,60 @@ pub fn serialize(data: String) -> Result<Song> {
 /// Render audio from song symbols. Returns a vector of channels, vectors of samples ready to be written in a wave file.
 ///
 /// Only uses a linear iterator.
-pub fn render(song: Song) -> Result<Vec<f32>> {
-    let mut result: Vec<Vec<f32>> = Vec::new();
+pub fn render(song: Song) -> Result<Vec<i32>> {
+    let mut result: Vec<Vec<i32>> = Vec::new();
     let (mut length, mut octave) = (4u8, 4u8);
     let tempo = song.tempo.get_real();
-    for chan in song.channels {
-        for symb in chan.symbols {
+    for (i, chan) in song.channels.iter().enumerate() {
+        result.push(Vec::new());
+        for symb in chan.symbols.iter() {
             match symb {
-                Symbol::L(n) => length = n,
-                Symbol::N(n, _) => result.push(sine(
-                    tempo / 60f64,
-                    song.tuning * 2f64.powf((n / song.scale.len() as u8) as f64),
-                )),
-                Symbol::O(n) => octave = n,
-                Symbol::R => result.push(silence(tempo / 60f64)),
+                Symbol::L(n) => length = *n,
+                Symbol::N(n, _) => sine(
+                    4f64 * (60f64 / tempo as f64) / length as f64,
+                    octave as f64
+                        * song.tuning
+                        * 2f64.powf(*n as f64 / song.scale.len() as f64 + 1f64),
+                )
+                .iter()
+                .for_each(|x| result[i].push(*x)),
+                Symbol::O(n) => octave = *n,
+                Symbol::R => silence(4f64 * (60f64 / tempo as f64) / length as f64)
+                    .iter()
+                    .for_each(|x| result[i].push(*x)),
             };
         }
     }
+    // dbg!(&result);
     Ok(merge(result))
 }
 
-fn merge(channels: Vec<Vec<f32>>) -> Vec<f32> {}
+pub fn merge(channels: Vec<Vec<i32>>) -> Vec<i32> {
+    let mut result: Vec<i32> = vec![];
+    let mut sums: Vec<Vec<i32>> = Vec::new();
+    let mut cursum: i64;
+    let mut len: usize;
+    for i in 0..channels.len() {
+        len = channels[i].len();
+        if sums.len() < len {
+            for _ in 0..len - sums.len() {
+                sums.push(Vec::new());
+            }
+        }
+        for j in 0..len {
+            sums[j].push(channels[i][j]);
+        }
+    }
+    for mut i in sums {
+        len = i.len();
+        if i.is_empty() {
+            break;
+        }
+        cursum = 0;
+        for _ in 0..len {
+            cursum += i.pop().unwrap() as i64;
+        }
+        result.push((cursum / len as i64) as i32);
+    }
+    result
+}

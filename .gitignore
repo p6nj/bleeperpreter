@@ -1,1 +1,9 @@
-/target
+*.wav
+target/*.*
+target/debug/.fingerprint
+target/debug/build
+target/debug/deps
+target/debug/incremental
+target/debug/*.*
+target/debug/bleep*
+**test*

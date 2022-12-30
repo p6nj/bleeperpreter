@@ -14,15 +14,15 @@ pub fn read(filename: String) -> Result<String> {
 }
 
 /// Write samples to a wave file
-pub fn write(filename: String, samples: Vec<f32>) -> Result<()> {
+pub fn write(filename: String, samples: Vec<i32>) -> Result<()> {
     use crate::audio::SAMPLE_RATE;
     let mut writer = WavWriter::create(
-        filename,
+        &filename,
         WavSpec {
             channels: 1,
             sample_rate: SAMPLE_RATE,
             bits_per_sample: 32,
-            sample_format: SampleFormat::Float,
+            sample_format: SampleFormat::Int,
         },
     )
     .with_context(|| format!("Error creating output file {:?}", filename))?;
