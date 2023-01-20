@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 
-use crate::audio::{silence, sine};
+use crate::audio::{signal, silence, Signal};
 
 #[derive(Debug)]
 enum Symbol {
@@ -51,7 +51,7 @@ pub struct Song {
     ///
     /// This vector of strings contain every symbol found in the scale header; it's a string so the symbols can be made of multiple letters as in French.
     /// Each symbol represents a frequency from a shared and evenly distributed interval (from X to 2X).
-    scale: Vec<String>,
+    scale: Vec<char>,
     channels: Vec<Channel>,
     /// Tempo (for metadata and length calculation)
     tempo: Tempo,
@@ -60,7 +60,7 @@ pub struct Song {
     /// Note that 440Hz/442Hz is the current standard tuning for A4;
     /// in this piece of code a scale may not have a tenth note like A,
     /// but it will have at least one note so the tuning is based on the first one.
-    tuning: f64,
+    tuning: f32,
 }
 
 /// `ensure(condition: bool)`
@@ -110,15 +110,15 @@ pub fn serialize(data: String) -> Result<Song> {
             numerator: 60,
             denominator: 4,
         }, // 1 quarter note per second
-        tuning: 55f64 * 2f64.powf(1f64 / 12f64), // occidental default for C1
+        tuning: 442f32, // occidental default
     };
 
-    for s in ["c", "C", "d", "D", "e", "f", "F", "g", "G", "a", "A", "b"] {
-        song.scale.push(String::from(s));
+    for s in ['c', 'C', 'd', 'D', 'e', 'f', 'F', 'g', 'G', 'a', 'A', 'b'] {
+        song.scale.push(s);
     }
 
     while character.is_some() {
-        dbg!(character.unwrap() as char);
+        // dbg!(character.unwrap() as char);
         match character.unwrap() as char {
             'a' => {
                 // author
@@ -176,7 +176,6 @@ pub fn serialize(data: String) -> Result<Song> {
                     }
                     'e' => {
                         // tempo
-                        // dbg!(*chars.last().unwrap() as char);
                         chars.reverse();
                         chars.drain(..5);
                         chars.reverse();
@@ -189,7 +188,7 @@ pub fn serialize(data: String) -> Result<Song> {
                             };
                             character = chars.pop();
                         }
-                        dbg!(character.unwrap() as char);
+                        // dbg!(character.unwrap() as char);
                         ensure(character.unwrap() != b'\n')
                             .with_context(|| format!("Expected tempo value: {line}"))?;
                         let mut tempo = Tempo {
@@ -243,22 +242,27 @@ pub fn serialize(data: String) -> Result<Song> {
                 }
                 ensure(character.unwrap() != b'\n')
                     .with_context(|| format!("Expected scale value: {line}"))?;
-                let mut word = String::new();
+                song.scale.clear();
+                let mut word = ' '; // using the space character ensures that no note is a space.
                 while character.unwrap() != b'\n' {
                     match character.unwrap() as char {
                         ',' => {
-                            ensure(!word.is_empty())
+                            ensure(word != ' ')
                                 .with_context(|| format!("Unexpected separator: {line}"))?;
-                            song.scale.push(String::from(word.trim()));
-                            word.clear();
+                            song.scale.push(word);
+                            word = ' ';
                         }
-                        c => word.push(c),
+                        c => {
+                            ensure(word == ' ').with_context(|| {
+                                format!("Sorry, one char per note (for readability): {line}")
+                            })?;
+                            word = c;
+                        }
                     }
                     character = chars.pop();
                 }
-                if !word.is_empty() {
-                    song.scale.push(String::from(word.trim()));
-                    drop(word);
+                if word != ' ' {
+                    song.scale.push(word);
                 }
             }
             '#' => {
@@ -360,7 +364,7 @@ pub fn serialize(data: String) -> Result<Song> {
                             current_channel.symbols.push(Symbol::N(
                                 song.scale
                                     .iter()
-                                    .position(|s| s == &note.to_string())
+                                    .position(|s| s == &note)
                                     .with_context(|| {
                                         format!("Unknown character {note:?}: {line}")
                                     })? as u8, // as U-wish
@@ -392,11 +396,11 @@ pub fn render(song: Song) -> Result<Vec<i32>> {
         for symb in chan.symbols.iter() {
             match symb {
                 Symbol::L(n) => length = *n,
-                Symbol::N(n, _) => sine(
+                Symbol::N(n, _) => signal(
+                    Signal::Sine,
                     4f64 * (60f64 / tempo as f64) / length as f64,
-                    octave as f64
-                        * song.tuning
-                        * 2f64.powf(*n as f64 / song.scale.len() as f64 + 1f64),
+                    song.tuning
+                        * 2f32.powf((*n + 12 * (octave - 1)) as f32 / song.scale.len() as f32),
                 )
                 .iter()
                 .for_each(|x| result[i].push(*x)),
