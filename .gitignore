@@ -7,3 +7,4 @@ target/debug/incremental
 target/debug/*.*
 target/debug/bleep*
 **test*
+.vscode/*.*

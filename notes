@@ -5,3 +5,8 @@ Bleeperpreter Syntax Tree (vars title-ized, var assignment: ">", errors: "!", es
 - all intra-channel modifiers should be case insensitive
 
 Syntax Tree diagram by dprebyl: https://dprebyl.github.io/syntree/
+
+TODO:
+  - add an instrument selector
+  - multi-channel support
+  - effects
