@@ -2,7 +2,7 @@
 ## Another custom MML interpreter, this time in Rust?  
 Python 🐍 is cute but Rust's mascot 🦀 is cuter! It's also faster and safe.
 In a text file full of typos and other obstacles, making sense means making rules.
-Rust is perfect for this kind of project (error reporting, `match` trees, zero-cost abstractions...).
+Rust is perfect for this kind of project (error reporting, `match` trees, zero-cost abstractions...). I'll learn a new language in the process!
 ## Where is it??
 Here's a directory tree:
 ```
