@@ -7,6 +7,8 @@ Bleeperpreter Syntax Tree (vars title-ized, var assignment: ">", errors: "!", es
 Syntax Tree diagram by dprebyl: https://dprebyl.github.io/syntree/
 
 TODO:
-  - add an instrument selector
+  - additional errors (or warnings when errors are unnecessary)
+  - instrument selector
   - multi-channel support
+  - octave change symbol
   - effects

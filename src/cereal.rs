@@ -1,6 +1,6 @@
 use crate::proc::ensure;
 use crate::structs::{Channel, Song, Symbol, Tempo};
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 
 fn parse_author(
     mut character: Option<u8>,
@@ -26,6 +26,133 @@ fn parse_author(
         song.author.push(character.unwrap() as char);
         character = chars.pop();
     }
+    Ok((character, chars))
+}
+
+fn parse_title(
+    mut character: Option<u8>,
+    mut chars: Vec<u8>,
+    song: &mut Song,
+    line: &mut u32,
+) -> Result<(Option<u8>, Vec<u8>)> {
+    chars.reverse();
+    chars.drain(..5);
+    chars.reverse();
+    character = chars.pop();
+    loop {
+        match character.unwrap() as char {
+            ' ' => (),
+            '\t' => (),
+            _ => break,
+        };
+        character = chars.pop();
+    }
+    ensure(character.unwrap() != b'\n').with_context(|| format!("Expected title value: {line}"))?;
+    while character.unwrap() != b'\n' {
+        song.title.push(match character.unwrap() as char {
+            '\\' => match chars.pop().unwrap() as char {
+                'n' => '\n',
+                other => other,
+            },
+            anything => anything,
+        });
+        character = chars.pop();
+    }
+    Ok((character, chars))
+}
+
+fn parse_scale(
+    mut character: Option<u8>,
+    mut chars: Vec<u8>,
+    song: &mut Song,
+    line: &mut u32,
+) -> Result<(Option<u8>, Vec<u8>)> {
+    chars.reverse();
+    chars.drain(..6);
+    chars.reverse();
+    character = chars.pop();
+    loop {
+        match character.unwrap() as char {
+            ' ' => (),
+            '\t' => (),
+            _ => break,
+        };
+        character = chars.pop();
+    }
+    ensure(character.unwrap() != b'\n').with_context(|| format!("Expected scale value: {line}"))?;
+    song.scale.clear();
+    let mut word = ' '; // using the space character ensures that no note is a space.
+    while character.unwrap() != b'\n' {
+        match character.unwrap() as char {
+            ',' => {
+                ensure(word != ' ').with_context(|| format!("Unexpected separator: {line}"))?;
+                song.scale.push(word);
+                word = ' ';
+            }
+            c => {
+                ensure(word == ' ').with_context(|| {
+                    format!("Sorry, one char per note (for readability): {line}")
+                })?;
+                word = c;
+            }
+        }
+        character = chars.pop();
+    }
+    if word != ' ' {
+        song.scale.push(word);
+    }
+    Ok((character, chars))
+}
+
+fn parse_tempo(
+    mut character: Option<u8>,
+    mut chars: Vec<u8>,
+    song: &mut Song,
+    line: &mut u32,
+) -> Result<(Option<u8>, Vec<u8>)> {
+    chars.reverse();
+    chars.drain(..5);
+    chars.reverse();
+    character = chars.pop();
+    loop {
+        match character.unwrap() as char {
+            ' ' => (),
+            '\t' => (),
+            _ => break,
+        };
+        character = chars.pop();
+    }
+    // dbg!(character.unwrap() as char);
+    ensure(character.unwrap() != b'\n').with_context(|| format!("Expected tempo value: {line}"))?;
+    let mut tempo = Tempo {
+        numerator: 0,
+        denominator: 4,
+    };
+    while character.unwrap() != b'\n' {
+        match character.unwrap() as char {
+            '/' => {
+                ensure(tempo.numerator != 0)
+                    .with_context(|| format!("Expected valid numerator first: {line}"))?;
+                tempo.denominator = 0;
+                character = chars.pop();
+                while character.unwrap() != b'\n' {
+                    tempo.denominator = tempo.denominator * 10
+                                            + ((character
+                                                .unwrap() as char)
+                                                .to_digit(10)
+                                                .with_context(|| format!("Cannot convert denominator character {character:?} to digit: {line}"))?
+                                                as u16);
+                    character = chars.pop();
+                }
+                break;
+            }
+            default => {
+                tempo.numerator = tempo.numerator * 10 + (default.to_digit(10).unwrap() as u16)
+            }
+        }
+        character = chars.pop();
+    }
+    song.tempo = tempo;
     Ok((character, chars))
 }
 
@@ -55,9 +182,8 @@ pub fn serialize(data: String) -> Result<Song> {
         // dbg!(character.unwrap() as char);
         match character.unwrap() as char {
             'a' => {
-                // author
                 (character, chars) = parse_author(character, chars, &mut song, &mut line)
-                    .context("Cannot parse author information")?;
+                    .context("Cannot parse author information")?
             }
             't' => {
                 character = chars.pop();
@@ -66,122 +192,19 @@ pub fn serialize(data: String) -> Result<Song> {
                 }
                 match character.unwrap() as char {
                     'i' => {
-                        // title
-                        chars.reverse();
-                        chars.drain(..5);
-                        chars.reverse();
-                        character = chars.pop();
-                        loop {
-                            match character.unwrap() as char {
-                                ' ' => (),
-                                '\t' => (),
-                                _ => break,
-                            };
-                            character = chars.pop();
-                        }
-                        ensure(character.unwrap() != b'\n')
-                            .with_context(|| format!("Expected title value: {line}"))?;
-                        while character.unwrap() != b'\n' {
-                            song.title.push(match character.unwrap() as char {
-                                '\\' => match chars.pop().unwrap() as char {
-                                    'n' => '\n',
-                                    other => other,
-                                },
-                                anything => anything,
-                            });
-                            character = chars.pop();
-                        }
+                        (character, chars) = parse_title(character, chars, &mut song, &mut line)
+                            .context("Cannot parse title information")?
                     }
                     'e' => {
-                        // tempo
-                        chars.reverse();
-                        chars.drain(..5);
-                        chars.reverse();
-                        character = chars.pop();
-                        loop {
-                            match character.unwrap() as char {
-                                ' ' => (),
-                                '\t' => (),
-                                _ => break,
-                            };
-                            character = chars.pop();
-                        }
-                        // dbg!(character.unwrap() as char);
-                        ensure(character.unwrap() != b'\n')
-                            .with_context(|| format!("Expected tempo value: {line}"))?;
-                        let mut tempo = Tempo {
-                            numerator: 0,
-                            denominator: 4,
-                        };
-                        while character.unwrap() != b'\n' {
-                            match character.unwrap() as char {
-                                '/' => {
-                                    ensure(tempo.numerator != 0).with_context(|| {
-                                        format!("Expected valid numerator first: {line}")
-                                    })?;
-                                    tempo.denominator = 0;
-                                    character = chars.pop();
-                                    while character.unwrap() != b'\n' {
-                                        tempo.denominator = tempo.denominator * 10
-                                            + ((character
-                                                .unwrap() as char)
-                                                .to_digit(10)
-                                                .with_context(|| format!("Cannot convert denominator character {character:?} to digit: {line}"))?
-                                                as u16);
-                                        character = chars.pop();
-                                    }
-                                    break;
-                                }
-                                default => {
-                                    tempo.numerator = tempo.numerator * 10
-                                        + (default.to_digit(10).unwrap() as u16)
-                                }
-                            }
-                            character = chars.pop();
-                        }
-                        song.tempo = tempo;
+                        (character, chars) = parse_tempo(character, chars, &mut song, &mut line)
+                            .context("Cannot parse tempo information")?
                     }
                     _ => (),
                 }
             }
             's' => {
-                // scale
-                chars.reverse();
-                chars.drain(..6);
-                chars.reverse();
-                character = chars.pop();
-                loop {
-                    match character.unwrap() as char {
-                        ' ' => (),
-                        '\t' => (),
-                        _ => break,
-                    };
-                    character = chars.pop();
-                }
-                ensure(character.unwrap() != b'\n')
-                    .with_context(|| format!("Expected scale value: {line}"))?;
-                song.scale.clear();
-                let mut word = ' '; // using the space character ensures that no note is a space.
-                while character.unwrap() != b'\n' {
-                    match character.unwrap() as char {
-                        ',' => {
-                            ensure(word != ' ')
-                                .with_context(|| format!("Unexpected separator: {line}"))?;
-                            song.scale.push(word);
-                            word = ' ';
-                        }
-                        c => {
-                            ensure(word == ' ').with_context(|| {
-                                format!("Sorry, one char per note (for readability): {line}")
-                            })?;
-                            word = c;
-                        }
-                    }
-                    character = chars.pop();
-                }
-                if word != ' ' {
-                    song.scale.push(word);
-                }
+                (character, chars) = parse_scale(character, chars, &mut song, &mut line)
+                    .context("Cannot parse scale information")?
             }
             '#' => {
                 // channel
