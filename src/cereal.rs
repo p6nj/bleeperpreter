@@ -267,6 +267,24 @@ pub fn serialize(data: String) -> Result<Song> {
                             }
                         }
                         '\n' => character = chars.pop(),
+                        '{' => {
+                            // found a loop
+                            character = chars.pop();
+                            let mut midstring: Vec<u8> = vec![];
+                            while character.with_context(|| format!("Unfinished loop: {line}"))?
+                                != '}' as u8
+                            {
+                                midstring.push(character.unwrap());
+                                character = chars.pop();
+                            }
+                            chars.pop();
+                            for _ in 0..2 {
+                                for i in &midstring {
+                                    chars.push(*i);
+                                }
+                            }
+                            character = chars.pop();
+                        }
                         note => {
                             current_channel.symbols.push(Symbol::N(
                                 song.scale
