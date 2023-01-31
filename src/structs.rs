@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 #[derive(Debug)]
 pub enum Symbol {
     /// Length symbol: the length of a duple note if the number is 2, a quarter note if 4 etc...
@@ -10,13 +8,6 @@ pub enum Symbol {
     N(u8),
     /// Rest symbol: a silent note with no additional information.
     R,
-}
-
-impl Display for Song {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, """Song
-        test""")
-    }
 }
 
 #[derive(Debug)]
