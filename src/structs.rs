@@ -7,17 +7,15 @@ pub enum Symbol {
     /// Octave symbol: the pitch of the next notes will depend on it
     O(u8),
     /// Note symbol: the number corresponds to the index of the note in the scale (starting from 1 for the frequency calculation).
-    /// A boolean is given to know if the envelope should be recreated or not, depending on if it's an '_' or not.
-    N(u8, bool),
+    N(u8),
     /// Rest symbol: a silent note with no additional information.
     R,
 }
 
-impl Display for Symbol {
+impl Display for Song {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Symbol::N(n, b) => write!(f, "Note: {}"),
-        }
+        write!(f, """Song
+        test""")
     }
 }
 

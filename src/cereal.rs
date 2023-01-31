@@ -230,16 +230,15 @@ pub fn serialize(data: String) -> Result<Song> {
                             let mut symbols = current_channel
                                 .symbols
                                 .iter()
-                                .filter(|s| matches!(s, Symbol::N(_, _)))
+                                .filter(|s| matches!(s, Symbol::N(_)))
                                 .rev();
                             current_channel.symbols.push(Symbol::N(
                                 match symbols.next().with_context(|| {
                                     format!("No previous note to repeat with '_': {line}")
                                 })? {
-                                    &Symbol::N(d, _) => d,
+                                    &Symbol::N(d) => d,
                                     _ => 0u8, // will never happen
                                 },
-                                false,
                             ));
                             character = chars.pop();
                         }
@@ -302,7 +301,6 @@ pub fn serialize(data: String) -> Result<Song> {
                                     .with_context(|| {
                                         format!("Unknown character {note:?}: {line}")
                                     })? as u8, // as U-wish
-                                true,
                             ));
                             character = chars.pop();
                         }
