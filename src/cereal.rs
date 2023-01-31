@@ -271,13 +271,22 @@ pub fn serialize(data: String) -> Result<Song> {
                             // found a loop
                             character = chars.pop();
                             let mut midstring: Vec<u8> = vec![];
-                            while character.with_context(|| format!("Unfinished loop: {line}"))?
-                                != '}' as u8
-                            {
-                                midstring.push(character.unwrap());
+                            let mut level = 1u8;
+                            loop {
+                                ensure(character.is_some())
+                                    .with_context(|| format!("Unfinished loop: {line}"))?;
+                                match character.unwrap() as char {
+                                    '{' => level += 1,
+                                    '}' => level -= 1,
+                                    other => midstring.push(other as u8),
+                                };
+                                if level == 0 {
+                                    break;
+                                }
                                 character = chars.pop();
                             }
-                            chars.pop();
+                            ensure(!midstring.is_empty())
+                                .with_context(|| format!("Empty loop: {line}"))?;
                             for _ in 0..2 {
                                 for i in &midstring {
                                     chars.push(*i);
