@@ -6,6 +6,7 @@ mod doc;
 mod file;
 mod proc;
 mod structs;
+mod tests;
 
 fn main() -> Result<()> {
     let (input, output) = proc::get_filenames().context("Cannot find file names in args")?;

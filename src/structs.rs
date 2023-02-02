@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Symbol {
     /// Length symbol: the length of a duple note if the number is 2, a quarter note if 4 etc...
     L(u8),
@@ -10,7 +10,7 @@ pub enum Symbol {
     R,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 /// The bpm is always the numerator, the denominator will be used for real tempo.
 /// For example, 'tempo: 120/2' means that the BPM is 120 but one beat is a duple note (x2 faster).
 pub struct Tempo {
@@ -29,13 +29,13 @@ impl GetReal for Tempo {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Channel {
     pub title: String,
     pub symbols: Vec<Symbol>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 /// A song with some info to include in the exported audio file metadata.
 pub struct Song {
     /// The title of the song (for metadata)
