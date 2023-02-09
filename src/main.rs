@@ -1,10 +1,7 @@
-use std::fmt::format;
-
 use anyhow::{Context, Result};
 
 mod audio;
 mod cereal;
-mod doc;
 mod file;
 mod proc;
 mod structs;
