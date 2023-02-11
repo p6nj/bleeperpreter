@@ -25,7 +25,6 @@ pub fn serialize(data: String) -> Result<Song> {
     }
 
     while character.is_some() {
-        // dbg!(character.unwrap() as char);
         match character.unwrap() as char {
             'a' => {
                 // author
@@ -201,6 +200,7 @@ pub fn serialize(data: String) -> Result<Song> {
                 line += 1; // we're now in the channel body
                 character = chars.pop();
                 while character.is_some() && character.unwrap() != b'#' {
+                    println!("{}", current_channel);
                     match character.unwrap() as char {
                         'l' => {
                             let mut length = 0u8;
@@ -271,33 +271,40 @@ pub fn serialize(data: String) -> Result<Song> {
                             // bug to squash: `{cd{eef}}` becomes `cdeefeef[!]deefeef`
                             // finishing by a } doesn't work: something about last char not being taken
                             character = chars.pop();
+                            ensure(character.is_some()).context("Last character cannot be '{'.")?;
                             let mut midstring: Vec<u8> = vec![];
                             let mut level = 1u8;
+                            let mut n = 0u8;
+                            while character.unwrap().is_ascii_digit() {
+                                n = n * 10
+                                    + (character.unwrap() as char).to_digit(10).unwrap() as u8;
+                                character = chars.pop();
+                                ensure(character.is_some()).with_context(|| {
+                                    format!("Unfinished loop with declared counter: {line}")
+                                })?;
+                            }
+                            if n == 0 {
+                                n = 2
+                            };
+                            let n = n; // freeze!
                             loop {
-                                ensure(character.is_some())
-                                    .with_context(|| format!("Unfinished loop: {line}"))?;
+                                midstring.push(character.unwrap());
                                 match character.unwrap() as char {
                                     '{' => level += 1,
                                     '}' => level -= 1,
                                     _ => (),
-                                };
+                                }
                                 if level == 0 {
                                     break;
                                 }
-                                midstring.push(character.unwrap());
                                 character = chars.pop();
+                                ensure(character.is_some())
+                                    .with_context(|| format!("Unfinished loop: {line}"))?;
                             }
-                            ensure(!midstring.is_empty())
-                                .with_context(|| format!("Empty loop: {line}"))?;
-                            midstring.reverse();
-                            chars.pop();
-                            println!("h");
-                            for i in &midstring.repeat(2) {
-                                chars.push(*i);
-                            }
+                            midstring.pop(); // remove last '}'
+                            midstring.repeat(n as usize);
+                            chars = [chars, midstring].concat();
                             character = chars.pop();
-                            dbg!(&chars);
-                            dbg!(&midstring);
                         }
                         note => {
                             current_channel.symbols.push(Symbol::N(
