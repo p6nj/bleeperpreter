@@ -78,7 +78,7 @@ impl Display for Symbol {
                     .unwrap()
                     .to_string(),
                 Symbol::O(o) => format!("o{o}"),
-                Symbol::R => String::from("rest"),
+                Symbol::R => String::from(" "),
             }
         )
     }

@@ -269,6 +269,7 @@ pub fn serialize(data: String) -> Result<Song> {
                         '{' => {
                             // found a loop
                             // bug to squash: `{cd{eef}}` becomes `cdeefeef[!]deefeef`
+                            // finishing by a } doesn't work: something about last char not being taken
                             character = chars.pop();
                             let mut midstring: Vec<u8> = vec![];
                             let mut level = 1u8;
@@ -293,9 +294,10 @@ pub fn serialize(data: String) -> Result<Song> {
                             println!("h");
                             for i in &midstring.repeat(2) {
                                 chars.push(*i);
-                                dbg!(*i as char);
                             }
                             character = chars.pop();
+                            dbg!(&chars);
+                            dbg!(&midstring);
                         }
                         note => {
                             current_channel.symbols.push(Symbol::N(
