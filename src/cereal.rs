@@ -2,6 +2,14 @@ use crate::proc::ensure;
 use crate::structs::{Channel, Song, Symbol, Tempo};
 use anyhow::{Context, Result};
 
+fn printvec(v: &Vec<u8>) -> String {
+    let mut r = String::new();
+    for n in v {
+        r.push(*n as char);
+    }
+    r
+}
+
 pub fn serialize(data: String) -> Result<Song> {
     let mut chars = Vec::from(data);
     chars.reverse();
@@ -291,18 +299,22 @@ pub fn serialize(data: String) -> Result<Song> {
                                 midstring.push(character.unwrap());
                                 match character.unwrap() as char {
                                     '{' => level += 1,
-                                    '}' => level -= 1,
+                                    '}' => {
+                                        if level == 1 {
+                                            break;
+                                        } else {
+                                            level -= 1
+                                        }
+                                    }
                                     _ => (),
-                                }
-                                if level == 0 {
-                                    break;
                                 }
                                 character = chars.pop();
                                 ensure(character.is_some())
                                     .with_context(|| format!("Unfinished loop: {line}"))?;
                             }
                             midstring.pop(); // remove last '}'
-                            midstring.repeat(n as usize);
+                            midstring = midstring.repeat(n as usize);
+                            midstring.reverse();
                             chars = [chars, midstring].concat();
                             character = chars.pop();
                         }
