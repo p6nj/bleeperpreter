@@ -7,12 +7,12 @@ pub fn read(filename: String) -> Result<String> {
 }
 
 /// Write samples to a wave file
-pub fn write(filename: String, samples: Vec<i32>) -> Result<()> {
+pub fn write(filename: String, samples: Vec<i32>, channels: u16) -> Result<()> {
     use crate::audio::SAMPLE_RATE;
     let mut writer = WavWriter::create(
         &filename,
         WavSpec {
-            channels: 1, // suggestion: one instrument channel for each audio channel (no additional audio processing)
+            channels: channels, // suggestion: one instrument channel for each audio channel (no additional audio processing)
             sample_rate: SAMPLE_RATE,
             bits_per_sample: 32,
             sample_format: SampleFormat::Int,

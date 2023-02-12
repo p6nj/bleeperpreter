@@ -67,6 +67,7 @@ pub fn render(song: Song) -> Result<Vec<i32>> {
     Ok(merge(result))
 }
 
+#[allow(dead_code)]
 pub fn merge(channels: Vec<Vec<i32>>) -> Vec<i32> {
     let mut result: Vec<i32> = vec![];
     let mut sums: Vec<Vec<i32>> = Vec::new();
@@ -93,6 +94,28 @@ pub fn merge(channels: Vec<Vec<i32>>) -> Vec<i32> {
             sum += i.pop().unwrap() as i64;
         }
         result.push((sum / len as i64) as i32);
+    }
+    result
+}
+
+#[allow(dead_code)]
+fn interleave(mut channels: Vec<Vec<i32>>) -> Vec<i32> {
+    let mut result: Vec<i32> = vec![];
+    let mut maxsize = 0usize;
+    let mut x: usize;
+    for channel in &channels {
+        x = channel.len();
+        if x > maxsize {
+            maxsize = x;
+        }
+    }
+    for _ in 0..maxsize - 1 {
+        for channel in &mut channels {
+            result.push(match channel.pop() {
+                Some(sample) => sample,
+                None => 0i32,
+            });
+        }
     }
     result
 }

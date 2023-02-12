@@ -11,6 +11,7 @@ fn main() -> Result<()> {
     let data = file::read(input).context("Cannot process file data")?;
     let serialized = cereal::serialize(data).context("Cannot parse text")?;
     println!("{serialized}");
-    file::write(output, proc::render(serialized)?)?;
+    // let length = serialized.channels.len() as u16;
+    file::write(output, proc::render(serialized)?, 1)?;
     Ok(())
 }

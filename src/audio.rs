@@ -3,6 +3,7 @@ use std::i32::MAX;
 
 pub const SAMPLE_RATE: u32 = 44100;
 
+#[allow(dead_code)]
 pub enum Signal {
     Sine,
     Square,

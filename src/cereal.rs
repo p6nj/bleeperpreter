@@ -2,6 +2,7 @@ use crate::proc::ensure;
 use crate::structs::{Channel, Song, Symbol, Tempo};
 use anyhow::{Context, Result};
 
+#[allow(dead_code)]
 fn printvec(v: &Vec<u8>) -> String {
     let mut r = String::new();
     for n in v {
@@ -276,8 +277,6 @@ pub fn serialize(data: String) -> Result<Song> {
                         '\n' => character = chars.pop(),
                         '{' => {
                             // found a loop
-                            // bug to squash: `{cd{eef}}` becomes `cdeefeef[!]deefeef`
-                            // finishing by a } doesn't work: something about last char not being taken
                             character = chars.pop();
                             ensure(character.is_some()).context("Last character cannot be '{'.")?;
                             let mut midstring: Vec<u8> = vec![];
@@ -325,17 +324,20 @@ pub fn serialize(data: String) -> Result<Song> {
                                     .position(|s| s == &note)
                                     .with_context(|| {
                                         format!("Unknown character {note:?}: {line}")
-                                    })? as u8, // as U-wish
+                                    })? as u8,
                             ));
                             character = chars.pop();
                         }
                     }
                 }
             }
-            '\n' => (),
-            _ => while chars.pop().is_some() && chars.pop() != Some(b'\n') {}, // anything else is seen as a comment, especially if it starts by a capital letter or '/'
+            '\n' => character = chars.pop(), // every other token case will take you there apart from the channel token which will make a loop (channel > something, channel > something...)
+            _ => {
+                while character.is_some() && character != Some(b'\n') {
+                    character = chars.pop()
+                }
+            } // anything else is seen as a comment, especially if it starts by a capital letter or '/'
         };
-        character = chars.pop();
         line += 1;
     }
     Ok(song)
