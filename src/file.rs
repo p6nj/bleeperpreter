@@ -2,14 +2,8 @@ use anyhow::{Context, Ok, Result};
 use hound::{SampleFormat, WavSpec, WavWriter};
 use std::fs::read_to_string;
 
-/// Read a file and return its content in a String
 pub fn read(filename: String) -> Result<String> {
-    let data: String =
-        read_to_string(&filename).with_context(|| format!("Error reading file {:?}", filename))?;
-    let mut parsed_data: String = data
-        .parse()
-        .with_context(|| format!("Error parsing file {:?}", filename))?;
-    Ok(parsed_data)
+    Ok(read_to_string(&filename).with_context(|| format!("Error reading file {:?}", filename))?)
 }
 
 /// Write samples to a wave file
@@ -18,7 +12,7 @@ pub fn write(filename: String, samples: Vec<i32>) -> Result<()> {
     let mut writer = WavWriter::create(
         &filename,
         WavSpec {
-            channels: 1,
+            channels: 1, // suggestion: one instrument channel for each audio channel (no additional audio processing)
             sample_rate: SAMPLE_RATE,
             bits_per_sample: 32,
             sample_format: SampleFormat::Int,
@@ -33,7 +27,7 @@ pub fn write(filename: String, samples: Vec<i32>) -> Result<()> {
             )
         })?;
     }
-    // finalize returns a wrapped `()`
+    // finalize returns a wrapped `()`, reusing it for return value
     Ok(writer
         .finalize()
         .with_context(|| format!("Error updating wav header of {:?}", filename))?)
