@@ -317,6 +317,11 @@ pub fn serialize(data: String) -> Result<Song> {
                             chars = [chars, midstring].concat();
                             character = chars.pop();
                         }
+                        '(' => unimplemented!(),
+                        '~' => unimplemented!(),
+                        '[' => unimplemented!(),
+                        '.' => unimplemented!(),
+                        ',' => unimplemented!(),
                         note => {
                             current_channel.symbols.push(Symbol::N(
                                 song.scale
