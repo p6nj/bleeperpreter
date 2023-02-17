@@ -3,7 +3,7 @@ use std::fmt::Display;
 #[derive(PartialEq)]
 pub enum Symbol {
     /// Length symbol: the length of a duple note if the number is 2, a quarter note if 4 etc...
-    L(u8),
+    L(f64),
     /// Octave symbol: the pitch of the next notes will depend on it
     O(u8),
     /// Note symbol: the number corresponds to the index of the note in the scale (starting from 1 for the frequency calculation).
@@ -18,23 +18,13 @@ pub struct Channel {
     pub symbols: Vec<Symbol>,
 }
 
-/// The bpm is always the numerator, the denominator will be used for real tempo.
-/// For example, 'tempo: 120/2' means that the BPM is 120 but one beat is a duple note (x2 faster).
-#[derive(PartialEq)]
-pub struct Tempo {
-    pub numerator: u16,
-    pub denominator: u16,
+/// Returns the real tempo in BPM using the numerator and the denominator.
+pub fn get_real_tempo(numerator: u16, denominator: u16) -> f64 {
+    (numerator * denominator) as f64 / 4f64
 }
 
-pub trait GetReal {
-    fn get_real(&self) -> f64;
-}
-
-impl GetReal for Tempo {
-    /// Returns the real tempo in BPM using the numerator and the denominator.
-    fn get_real(&self) -> f64 {
-        (self.numerator * self.denominator) as f64 / 4f64
-    }
+pub fn get_real_length(length: u8, tempo: f64) -> f64 {
+    4f64 * (60f64 / tempo) / length as f64
 }
 
 #[derive(PartialEq)]
@@ -51,19 +41,13 @@ pub struct Song {
     pub scale: Vec<char>,
     pub channels: Vec<Channel>,
     /// Tempo (for metadata and length calculation)
-    pub tempo: Tempo,
+    pub tempo: f64,
     /// Basic scale tuning, provide a reference for the first note of the first octave (~C1).
     ///
     /// Note that 440Hz/442Hz is the current standard tuning for A4;
     /// in this piece of code a scale may not have a tenth note like A,
     /// but it will have at least one note so the tuning is based on the first one.
     pub tuning: f32,
-}
-
-impl Display for Tempo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}/{}", self.numerator, self.denominator)
-    }
 }
 
 impl Display for Symbol {

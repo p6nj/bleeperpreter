@@ -1,6 +1,6 @@
 use crate::{
     audio::{signal, silence, Signal},
-    structs::{GetReal, Song, Symbol},
+    structs::{get_real_length, Song, Symbol},
 };
 use anyhow::{Context, Result};
 
@@ -41,8 +41,7 @@ pub fn get_filenames() -> Result<(String, String)> {
 /// Only uses a linear iterator.
 pub fn render(song: Song) -> Result<Vec<i32>> {
     let mut result: Vec<Vec<i32>> = Vec::new();
-    let (mut length, mut octave) = (4u8, 4u8);
-    let tempo = song.tempo.get_real();
+    let (mut length, mut octave) = (get_real_length(4u8, song.tempo), 4u8);
     for (i, chan) in song.channels.iter().enumerate() {
         result.push(Vec::new());
         for symbol in chan.symbols.iter() {
@@ -50,16 +49,14 @@ pub fn render(song: Song) -> Result<Vec<i32>> {
                 Symbol::L(n) => length = *n,
                 Symbol::N(n) => signal(
                     Signal::Sine,
-                    4f64 * (60f64 / tempo as f64) / length as f64,
+                    length,
                     song.tuning
                         * 2f32.powf((*n + 12 * (octave - 1)) as f32 / song.scale.len() as f32),
                 )
                 .iter()
                 .for_each(|x| result[i].push(*x)),
                 Symbol::O(n) => octave = *n,
-                Symbol::R => silence(4f64 * (60f64 / tempo as f64) / length as f64)
-                    .iter()
-                    .for_each(|x| result[i].push(*x)),
+                Symbol::R => silence(length).iter().for_each(|x| result[i].push(*x)),
             };
         }
     }

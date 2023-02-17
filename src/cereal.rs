@@ -1,5 +1,5 @@
 use crate::proc::ensure;
-use crate::structs::{Channel, Song, Symbol, Tempo};
+use crate::structs::{get_real_length, get_real_tempo, Channel, Song, Symbol};
 use anyhow::{Context, Result};
 
 #[allow(dead_code)]
@@ -22,11 +22,8 @@ pub fn serialize(data: String) -> Result<Song> {
         author: String::new(),
         scale: Vec::new(),
         channels: Vec::new(),
-        tempo: Tempo {
-            numerator: 60,
-            denominator: 4,
-        }, // 1 quarter note per second
-        tuning: 442f32, // occidental default
+        tempo: get_real_tempo(60, 4), // 1 quarter note per second
+        tuning: 442f32,               // occidental default
     };
 
     for s in ['c', 'C', 'd', 'D', 'e', 'f', 'F', 'g', 'G', 'a', 'A', 'b'] {
@@ -106,20 +103,18 @@ pub fn serialize(data: String) -> Result<Song> {
                         // dbg!(character.unwrap() as char);
                         ensure(character.unwrap() != b'\n')
                             .with_context(|| format!("Expected tempo value: {line}"))?;
-                        let mut tempo = Tempo {
-                            numerator: 0,
-                            denominator: 4,
-                        };
+                        let mut numerator = 0u16;
+                        let mut denominator = 0u16;
                         while character.unwrap() != b'\n' {
                             match character.unwrap() as char {
                                 '/' => {
-                                    ensure(tempo.numerator != 0).with_context(|| {
+                                    ensure(numerator != 0).with_context(|| {
                                         format!("Expected valid numerator first: {line}")
                                     })?;
-                                    tempo.denominator = 0;
+                                    denominator = 0;
                                     character = chars.pop();
                                     while character.unwrap() != b'\n' {
-                                        tempo.denominator = tempo.denominator * 10
+                                        denominator = denominator * 10
                                             + ((character
                                                 .unwrap() as char)
                                                 .to_digit(10)
@@ -130,13 +125,13 @@ pub fn serialize(data: String) -> Result<Song> {
                                     break;
                                 }
                                 default => {
-                                    tempo.numerator = tempo.numerator * 10
-                                        + (default.to_digit(10).unwrap() as u16)
+                                    numerator =
+                                        numerator * 10 + (default.to_digit(10).unwrap() as u16)
                                 }
                             }
                             character = chars.pop();
                         }
-                        song.tempo = tempo;
+                        song.tempo = get_real_tempo(numerator, denominator);
                     }
                     _ => (),
                 }
@@ -209,7 +204,6 @@ pub fn serialize(data: String) -> Result<Song> {
                 line += 1; // we're now in the channel body
                 character = chars.pop();
                 while character.is_some() && character.unwrap() != b'#' {
-                    println!("{}", current_channel);
                     match character.unwrap() as char {
                         'l' => {
                             let mut length = 0u8;
@@ -219,7 +213,9 @@ pub fn serialize(data: String) -> Result<Song> {
                                     + (character.unwrap() as char).to_digit(10).unwrap() as u8;
                                 character = chars.pop();
                             }
-                            current_channel.symbols.push(Symbol::L(length));
+                            current_channel
+                                .symbols
+                                .push(Symbol::L(get_real_length(length, song.tempo)));
                         }
                         'o' => {
                             let mut octave = 0u8;
