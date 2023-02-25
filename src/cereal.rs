@@ -1,5 +1,5 @@
 use crate::proc::ensure;
-use crate::structs::{get_real_length, get_real_tempo, Channel, Song, Symbol};
+use crate::structs::{get_real_length, get_real_tempo, Channel, Effect, Song, Symbol};
 use anyhow::{Context, Result};
 
 #[allow(dead_code)]
@@ -235,15 +235,32 @@ pub fn serialize(data: String) -> Result<Song> {
                             let mut symbols = current_channel
                                 .symbols
                                 .iter()
-                                .filter(|s| matches!(s, Symbol::N(_)))
+                                .filter(|s| matches!(s, Symbol::N(_, _)))
+                                .rev();
+                            current_channel.symbols.push(
+                                symbols
+                                    .next()
+                                    .with_context(|| {
+                                        format!("No previous note to repeat with '_': {line}")
+                                    })?
+                                    .clone(),
+                            );
+                            character = chars.pop();
+                        }
+                        '-' => {
+                            let mut symbols = current_channel
+                                .symbols
+                                .iter()
+                                .filter(|s| matches!(s, Symbol::N(_, _)))
                                 .rev();
                             current_channel.symbols.push(Symbol::N(
                                 match symbols.next().with_context(|| {
                                     format!("No previous note to repeat with '_': {line}")
                                 })? {
-                                    &Symbol::N(d) => d,
+                                    &Symbol::N(d, _) => d,
                                     _ => 0u8, // will never happen
                                 },
+                                Some(Effect::SG(0)),
                             ));
                             character = chars.pop();
                         }
@@ -313,11 +330,11 @@ pub fn serialize(data: String) -> Result<Song> {
                             chars = [chars, midstring].concat();
                             character = chars.pop();
                         }
-                        '(' => unimplemented!(),
-                        '~' => unimplemented!(),
-                        '[' => unimplemented!(),
-                        '.' => unimplemented!(),
-                        ',' => unimplemented!(),
+                        '(' => todo!(),
+                        '~' => todo!(),
+                        '[' => todo!(),
+                        '.' => todo!(),
+                        ',' => todo!(),
                         note => {
                             current_channel.symbols.push(Symbol::N(
                                 song.scale
@@ -326,6 +343,7 @@ pub fn serialize(data: String) -> Result<Song> {
                                     .with_context(|| {
                                         format!("Unknown character {note:?}: {line}")
                                     })? as u8,
+                                None,
                             ));
                             character = chars.pop();
                         }

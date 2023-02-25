@@ -1,15 +1,23 @@
 use std::fmt::Display;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum Symbol {
     /// Length symbol: the length of a duple note if the number is 2, a quarter note if 4 etc...
     L(f64),
     /// Octave symbol: the pitch of the next notes will depend on it
     O(u8),
     /// Note symbol: the number corresponds to the index of the note in the scale (starting from 1 for the frequency calculation).
-    N(u8),
+    N(u8, Option<Effect>),
     /// Rest symbol: a silent note with no additional information.
     R,
+}
+
+#[derive(PartialEq, Clone, Copy)]
+pub enum Effect {
+    /// Static Glissando
+    SG(u32),
+    /// Dynamic Glissando
+    DG(u8),
 }
 
 #[derive(PartialEq)]
@@ -50,6 +58,19 @@ pub struct Song {
     pub tuning: f32,
 }
 
+impl Display for Effect {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Effect::SG(_) => "~",
+                Effect::DG(_) => "~",
+            }
+        )
+    }
+}
+
 impl Display for Symbol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -57,10 +78,15 @@ impl Display for Symbol {
             "{}",
             match self {
                 Symbol::L(l) => format!("l{l}"),
-                Symbol::N(n) => ['c', 'C', 'd', 'D', 'e', 'f', 'F', 'g', 'G', 'a', 'A', 'b']
-                    .get(*n as usize)
-                    .unwrap()
-                    .to_string(),
+                Symbol::N(n, m) =>
+                    ['c', 'C', 'd', 'D', 'e', 'f', 'F', 'g', 'G', 'a', 'A', 'b']
+                        .get(*n as usize)
+                        .unwrap()
+                        .to_string()
+                        + &match m {
+                            Some(x) => format!("{x}"),
+                            None => String::new(),
+                        },
                 Symbol::O(o) => format!("o{o}"),
                 Symbol::R => String::from(" "),
             }

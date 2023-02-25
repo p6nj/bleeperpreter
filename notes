@@ -2,7 +2,7 @@ Bleeperpreter Syntax Tree (vars title-ized, var assignment: ">", errors: "!", es
 - tag override is possible
 - consider adding support for negative tempi (song will go back in time, maybe an easter egg)
 - having new line chars in channel names would be weird and make them difficult to call back in global effect brackets
-- all intra-channel modifiers should be case insensitive
+- all intra-channel Effects should be case insensitive
 
 Syntax Tree diagram by dprebyl: https://dprebyl.github.io/syntree/
 

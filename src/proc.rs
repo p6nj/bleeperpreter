@@ -47,7 +47,7 @@ pub fn render(song: Song) -> Result<Vec<i32>> {
         for symbol in chan.symbols.iter() {
             match symbol {
                 Symbol::L(n) => length = *n,
-                Symbol::N(n) => signal(
+                Symbol::N(n, _) => signal(
                     Signal::Sine,
                     length,
                     song.tuning
