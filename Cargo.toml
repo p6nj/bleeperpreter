@@ -2,13 +2,6 @@
 name = "bleeperpreter"
 version = "0.2.0"
 
-[lib]
-name = "leeberpreter"
-path = "src/lib.rs"
-
-[[bin]]
-name = "bleeperpreter"
-path = "src/main.rs"
-
 [dependencies]
 anyhow = "1.0"
+meval = "0.2.0"
