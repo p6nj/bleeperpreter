@@ -27,7 +27,7 @@
                         "base": "reverb",
                         "mask": "!26 ..a."
                     },
-                    "ADSR": {}
+                    "piano env": {}
                 },
                 "channels": {
                     "piano": {

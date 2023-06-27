@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4.3", features = ["derive"] }
+hound = "3.5.0"
 id3 = "1.7.0"
 json = "*"
 meval = "0.2"
