@@ -1,43 +1,47 @@
 {
-    "title": "My First Song",
-    "artist": "me",
-    "album": "My First Album",
-    "BPM": 60,
-    "instruments": {
-        "piano-sample": {
-            "type": "sample",
-            "path": "../sound/piano.wav",
-            "loop": false
-        },
-        "sine": {
-            "type": "expression",
-            "expression": "sin(x)",
-            "resets": true
-        },
-        "the two": {
-            "type": "mix",
-            "first": "piano-sample",
-            "second": "sine",
-            "operator": "+"
+    "My First Album": {
+        "artist": "me",
+        "tracks": {
+            "My First Song": {
+                "BPM": 60,
+                "instruments": {
+                    "piano-sample": {
+                        "type": "sample",
+                        "path": "../sound/piano.wav",
+                        "loop": false
+                    },
+                    "sine": {
+                        "type": "expression",
+                        "expression": "sin(x)",
+                        "resets": true
+                    },
+                    "the two": {
+                        "type": "mix",
+                        "first": "piano-sample",
+                        "second": "sine",
+                        "operator": "+"
+                    }
+                },
+                "effects": {
+                    "low reverb": {
+                        "base": "reverb",
+                        "mask": "!26 ..a."
+                    },
+                    "ADSR": {}
+                },
+                "channels": {
+                    "piano": {
+                        "instrument": "piano-sample",
+                        "effects": [
+                            "low reverb"
+                        ],
+                        "notes": "aAbcCdDefFgG",
+                        "tuning": 442,
+                        "mask": "@4$4!100 a.cd"
+                    },
+                    "synth": {}
+                }
+            }
         }
-    },
-    "effects": {
-        "low reverb": {
-            "base": "reverb",
-            "mask": "!26 ..a."
-        },
-        "ADSR": {}
-    },
-    "channels": {
-        "piano": {
-            "instrument": "piano-sample",
-            "effects": [
-                "low reverb"
-            ],
-            "notes": "aAbcCdDefFgG",
-            "tuning": 442,
-            "mask": "@4$4!100 a.cd"
-        },
-        "synth": {}
     }
 }

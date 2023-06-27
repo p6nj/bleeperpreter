@@ -1,10 +1,5 @@
 *.wav
-target/*.*
-target/debug/.fingerprint
-target/debug/build
-target/debug/deps
-target/debug/incremental
-target/debug/*.*
-target/debug/bleep*
+target
 **test*
 .vscode/*.*
+Cargo.lock

@@ -1,8 +1,11 @@
-use std::fs::read_to_string;
-
+#[allow(dead_code)]
 mod json;
+#[allow(dead_code)]
+mod tags;
+#[allow(dead_code)]
+mod valid;
 
-use ::json::JsonValue;
+use anyhow::{Context, Result};
 use clap::Parser;
 #[derive(Debug, Parser)]
 #[clap(version, about = "An advanced MML interpreter")]
@@ -10,8 +13,8 @@ struct Arguments {
     json_path: String,
 }
 
-fn main() {
+fn main() -> Result<()> {
     let args = Arguments::parse();
-    let content = read_to_string(args.json_path).unwrap();
-    println!("{}", JsonValue::from(content));
+    json::parse(args.json_path).context("error parsing json file")?;
+    Ok(())
 }
