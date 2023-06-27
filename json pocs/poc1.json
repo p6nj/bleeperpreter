@@ -24,8 +24,7 @@
     "effects": {
         "low reverb": {
             "base": "reverb",
-            "mix": 0.2,
-            "mask": "..a."
+            "mask": "!26 ..a."
         },
         "ADSR": {}
     },
@@ -37,7 +36,7 @@
             ],
             "notes": "aAbcCdDefFgG",
             "tuning": 442,
-            "mask": "@4!4$100 a.cd"
+            "mask": "@4$4!100 a.cd"
         },
         "synth": {}
     }

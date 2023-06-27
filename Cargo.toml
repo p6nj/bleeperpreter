@@ -1,7 +1,10 @@
 [package]
 name = "bleeperpreter"
 version = "0.2.0"
+edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-meval = "0.2.0"
+clap = { version = "4.3", features = ["derive"] }
+json = "*"
+meval = "0.2"
