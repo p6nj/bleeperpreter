@@ -1,6 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Index};
 
+use anyhow::{Context, Error};
+use json::JsonValue;
 use meval::{tokenizer::Operation, Expr};
+use nom::{character::complete::one_of, combinator::map_res};
 
 pub struct Album {
     name: String,
@@ -36,15 +39,15 @@ enum Instrument {
 // TODO: complete effect structure
 struct Effect {
     base: String,
-    mask: Vec<MaskAtoms>,
+    mask: Mask,
 }
 
 struct Channel {
     name: String,
     instrument: Instrument,
-    effect: Vec<Effect>,
+    effects: Vec<Effect>,
     tuning: u16,
-    mask: Vec<MaskAtoms>,
+    mask: Mask,
 }
 
 enum MaskAtoms {
@@ -53,4 +56,23 @@ enum MaskAtoms {
     Volume(u8),
     Note(u8),
     Rest,
+}
+
+struct Mask(Vec<MaskAtoms>);
+
+impl From<JsonValue> for Channel {
+    fn from(value: JsonValue) -> Self {
+        todo!()
+    }
+}
+
+/// From the string mask and a string of allowed notes
+impl TryFrom<(String, String)> for Mask {
+    type Error = Error;
+    fn try_from(value: (String, String)) -> Result<Self, Self::Error> {
+        Ok(Self(vec![MaskAtoms::Note(map_res(
+            one_of(value.1),
+            move |note| -> u8 { value.1.find(note).unwrap().try_into() },
+        )(value.0))]))
+    }
 }

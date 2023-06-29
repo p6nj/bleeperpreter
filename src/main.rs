@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 mod backbone;
 #[allow(dead_code)]
-mod json;
+mod jsons;
 #[allow(dead_code)]
 mod tags;
 
@@ -15,6 +15,6 @@ struct Arguments {
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
-    json::parse(args.json_path).context("error parsing json file")?;
+    jsons::parse(args.json_path).context("error parsing json file")?;
     Ok(())
 }
