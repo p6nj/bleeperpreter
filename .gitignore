@@ -2,4 +2,4 @@
 target
 **test*
 .vscode/*.*
-Cargo.lock
+*.lock

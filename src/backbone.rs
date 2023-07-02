@@ -11,15 +11,14 @@ use nom::{character::complete::one_of, combinator::map_res, sequence::preceded, 
 pub struct Album {
     name: String,
     artist: String,
-    tracks: Vec<Track>,
+    tracks: HashMap<String, Track>,
 }
 
 struct Track {
-    name: String,
     bpm: u16,
     instruments: HashMap<String, Instrument>,
     effects: HashMap<String, Effect>,
-    channels: Vec<Channel>,
+    channels: HashMap<String, Channel>,
 }
 
 enum Instrument {
@@ -46,7 +45,6 @@ struct Effect {
 }
 
 struct Channel {
-    name: String,
     instrument: Instrument,
     effects: Vec<Effect>,
     tuning: u16,
@@ -99,9 +97,59 @@ fn volume<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
     })
 }
 
-impl From<JsonValue> for Channel {
-    fn from(value: JsonValue) -> Self {
+fn err_field(field: &str, r#type: &str) -> String {
+    format!("field \"{}\" is not a \"{}\"", field, r#type)
+}
+
+fn err_parse(r#type: &str, name: &str) -> String {
+    format!("can't parse {} \"{}\"", r#type, name)
+}
+
+impl TryFrom<JsonValue> for Effect {
+    type Error = Error;
+    fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
         todo!()
+    }
+}
+
+impl TryFrom<JsonValue> for Instrument {
+    type Error = Error;
+    fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+
+impl Channel {
+    fn try_from(song_root: JsonValue, target: String) -> Result<Self, Error> {
+        Ok(Channel {
+            instrument: Instrument::try_from(
+                song_root["instruments"][song_root["channels"][target]["instrument"]
+                    .as_str()
+                    .context(err_field("instrument", "string"))?],
+            )?,
+            effects: {
+                let mut vec = vec![];
+                song_root["channels"][target]["effects"]
+                    .members()
+                    .try_for_each(|ef| {
+                        Ok::<(), Error>(
+                            vec.push(
+                                Effect::try_from(
+                                    song_root["effects"][ef
+                                        .as_str()
+                                        .context(err_field("effects", "pure string array"))?],
+                                )
+                                .context(err_parse("effect", ef.as_str().unwrap()))?,
+                            ),
+                        )
+                    });
+                vec
+            },
+            tuning: song_root["channels"][target]["tuning"]
+                .as_u16()
+                .context(err_field("tuning", "unsigned 16-bit integer"))?,
+            mask: Mask::try_from(song_root["channels"][target])?,
+        })
     }
 }
 
