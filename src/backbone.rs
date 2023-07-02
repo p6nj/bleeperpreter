@@ -6,10 +6,7 @@ use meval::{tokenizer::Operation, Expr};
 use nom::branch::alt;
 use nom::character::complete::{char, digit1, space0};
 use nom::multi::many0;
-use nom::{
-    character::complete::one_of, combinator::map_res, number::complete::u8, sequence::preceded,
-    IResult,
-};
+use nom::{character::complete::one_of, combinator::map_res, sequence::preceded, IResult};
 
 pub struct Album {
     name: String,
@@ -65,6 +62,9 @@ enum MaskAtoms {
     Rest,
 }
 
+#[derive(Debug, PartialEq)]
+struct Mask(Vec<MaskAtoms>);
+
 fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
     map_res(one_of(notes), move |c| {
         Ok::<MaskAtoms, Error>(MaskAtoms::Note(
@@ -99,8 +99,6 @@ fn volume<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
     })
 }
 
-struct Mask(Vec<MaskAtoms>);
-
 impl From<JsonValue> for Channel {
     fn from(value: JsonValue) -> Self {
         todo!()
@@ -108,14 +106,29 @@ impl From<JsonValue> for Channel {
 }
 
 /// From the string mask and a string of allowed notes
-impl TryFrom<(String, String)> for Mask {
+impl TryFrom<JsonValue> for Mask {
     type Error = Error;
-    fn try_from(value: (String, String)) -> Result<Self, Self::Error> {
+    fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
         Ok(Mask(
             many0(preceded(
                 space0,
-                alt((note(value.1.as_str()), rest(), length(), octave(), volume())),
-            ))(value.0.as_str())
+                alt((
+                    note(
+                        value["notes"]
+                            .as_str()
+                            .context("the \"notes\" field is not a string")?,
+                    ),
+                    rest(),
+                    length(),
+                    octave(),
+                    volume(),
+                )),
+            ))(
+                value["mask"]
+                    .as_str()
+                    .context("the \"mask\" field is not a string")?,
+            )
+            .map_err(|e| e.to_owned())
             .context("cannot parse mask input")?
             .1,
         ))
@@ -124,6 +137,8 @@ impl TryFrom<(String, String)> for Mask {
 
 #[cfg(test)]
 mod tests {
+    use json::object;
+
     use super::*;
     #[test]
     pub fn note_parser() {
@@ -140,5 +155,29 @@ mod tests {
     #[test]
     pub fn rest_parser() {
         assert_eq!(Ok(("iueg", MaskAtoms::Rest)), rest()(".iueg"));
+    }
+    #[test]
+    pub fn mask_parser() {
+        assert_eq!(
+            Mask(vec![
+                MaskAtoms::Octave(4),
+                MaskAtoms::Length(4),
+                MaskAtoms::Volume(100),
+                MaskAtoms::Note(0),
+                MaskAtoms::Rest,
+                MaskAtoms::Note(3),
+                MaskAtoms::Note(5)
+            ]),
+            Mask::try_from(object! {
+                "instrument": "piano-sample",
+                "effects": [
+                    "low reverb"
+                ],
+                "notes": "aAbcCdDefFgG",
+                "tuning": 442,
+                "mask": "@4$4!100 a.cd"
+            })
+            .unwrap()
+        );
     }
 }
