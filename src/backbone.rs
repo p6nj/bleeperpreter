@@ -1,6 +1,7 @@
 use hound::WavReader;
 use std::collections::HashMap;
 use std::fs::{read_to_string, File};
+use std::str::FromStr;
 
 use anyhow::{Context, Error};
 use json::JsonValue;
@@ -137,6 +138,15 @@ impl TryFrom<&JsonValue> for Instrument {
                 loops: value["loops"].as_bool().unwrap_or(false),
                 resets: value["resets"].as_bool().unwrap_or(false),
             }),
+            "expression" => Ok(Instrument::Expression {
+                expr: Expr::from_str(
+                    value["expression"]
+                        .as_str()
+                        .context(err_field("expression", "string"))?,
+                )
+                .context("can't parse expression")?,
+                resets: value["resets"].as_bool().unwrap_or(false),
+            }),
             _ => Err(Error::msg("unknown instrument type")),
         }
     }
@@ -254,6 +264,21 @@ mod tests {
         );
     }
     #[test]
+    pub fn instrument_parser() {
+        assert_eq!(
+            Instrument::Expression {
+                expr: Expr::from_str("sin(x)").unwrap(),
+                resets: true
+            },
+            Instrument::try_from(&object! {
+                "type": "expression",
+                "expression": "sin(x)",
+                "resets": true
+            })
+            .unwrap()
+        );
+    }
+    #[test]
     pub fn channel_parser() {
         assert_eq!(
             Channel {
@@ -278,7 +303,7 @@ mod tests {
                 "instruments": {
                     "piano-sample": {
                         "type": "sample",
-                        "path": "../sound/piano.wav",
+                        "path": "sound/piano.wav",
                         "loop": false
                     },
                     "sine": {
@@ -310,7 +335,12 @@ mod tests {
                         "tuning": 442,
                         "mask": "@4$4!100 a.cd"
                     },
-                    "synth": {}
+                    "synth": {
+                        "instrument": "sine",
+                        "notes": "aAbcCdDefFgG",
+                        "tuning": 442,
+                        "mask": "@4$4!100 a.cd"
+                    }
                 }},
                 "piano"
             )

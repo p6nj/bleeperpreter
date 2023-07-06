@@ -7,19 +7,13 @@
                 "instruments": {
                     "piano-sample": {
                         "type": "sample",
-                        "path": "../sound/piano.wav",
+                        "path": "sound/piano.wav",
                         "loops": false
                     },
                     "sine": {
                         "type": "expression",
                         "expression": "sin(x)",
                         "resets": true
-                    },
-                    "the two": {
-                        "type": "mix",
-                        "first": "piano-sample",
-                        "second": "sine",
-                        "operator": "+"
                     }
                 },
                 "effects": {
@@ -39,7 +33,12 @@
                         "tuning": 442,
                         "mask": "@4$4!100 a.cd"
                     },
-                    "synth": {}
+                    "synth": {
+                        "instrument": "sine",
+                        "notes": "aAbcCdDefFgG",
+                        "tuning": 442,
+                        "mask": "@4$4!100 a.cd"
+                    }
                 }
             }
         }
