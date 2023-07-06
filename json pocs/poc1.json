@@ -8,7 +8,7 @@
                     "piano-sample": {
                         "type": "sample",
                         "path": "../sound/piano.wav",
-                        "loop": false
+                        "loops": false
                     },
                     "sine": {
                         "type": "expression",

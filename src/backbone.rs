@@ -1,4 +1,6 @@
+use hound::WavReader;
 use std::collections::HashMap;
+use std::fs::{read_to_string, File};
 
 use anyhow::{Context, Error};
 use json::JsonValue;
@@ -118,7 +120,25 @@ impl TryFrom<&JsonValue> for Effect {
 impl TryFrom<&JsonValue> for Instrument {
     type Error = Error;
     fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
-        panic!("{}", value);
+        match value["type"]
+            .as_str()
+            .context(err_field("type", "string"))?
+        {
+            "sample" => Ok(Instrument::Sample {
+                data: WavReader::open(
+                    value["path"]
+                        .as_str()
+                        .context(err_field("path", "string"))?,
+                )
+                .context("can't open sample file")?
+                .samples::<f32>()
+                .map(|result| result.unwrap())
+                .collect(),
+                loops: value["loops"].as_bool().unwrap_or(false),
+                resets: value["resets"].as_bool().unwrap_or(false),
+            }),
+            _ => Err(Error::msg("unknown instrument type")),
+        }
     }
 }
 
