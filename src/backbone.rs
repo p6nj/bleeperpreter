@@ -21,6 +21,7 @@ struct Track {
     channels: HashMap<String, Channel>,
 }
 
+#[derive(PartialEq, Debug)]
 enum Instrument {
     Sample {
         data: Vec<f32>,
@@ -39,11 +40,13 @@ enum Instrument {
 }
 
 // TODO: complete effect structure
+#[derive(PartialEq, Debug)]
 struct Effect {
     base: String,
     mask: Mask,
 }
 
+#[derive(PartialEq, Debug)]
 struct Channel {
     instrument: Instrument,
     effects: Vec<Effect>,
@@ -105,25 +108,25 @@ fn err_parse(r#type: &str, name: &str) -> String {
     format!("can't parse {} \"{}\"", r#type, name)
 }
 
-impl TryFrom<JsonValue> for Effect {
+impl TryFrom<&JsonValue> for Effect {
     type Error = Error;
-    fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
-        todo!()
+    fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
+        panic!("{}", value);
     }
 }
 
-impl TryFrom<JsonValue> for Instrument {
+impl TryFrom<&JsonValue> for Instrument {
     type Error = Error;
-    fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
-        todo!()
+    fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
+        panic!("{}", value);
     }
 }
 
 impl Channel {
-    fn try_from(song_root: JsonValue, target: String) -> Result<Self, Error> {
+    fn try_from(song_root: &JsonValue, target: &str) -> Result<Self, Error> {
         Ok(Channel {
             instrument: Instrument::try_from(
-                song_root["instruments"][song_root["channels"][target]["instrument"]
+                &song_root["instruments"][song_root["channels"][target]["instrument"]
                     .as_str()
                     .context(err_field("instrument", "string"))?],
             )?,
@@ -135,28 +138,28 @@ impl Channel {
                         Ok::<(), Error>(
                             vec.push(
                                 Effect::try_from(
-                                    song_root["effects"][ef
+                                    &song_root["effects"][ef
                                         .as_str()
                                         .context(err_field("effects", "pure string array"))?],
                                 )
                                 .context(err_parse("effect", ef.as_str().unwrap()))?,
                             ),
                         )
-                    });
+                    })?;
                 vec
             },
             tuning: song_root["channels"][target]["tuning"]
                 .as_u16()
                 .context(err_field("tuning", "unsigned 16-bit integer"))?,
-            mask: Mask::try_from(song_root["channels"][target])?,
+            mask: Mask::try_from(&song_root["channels"][target])?,
         })
     }
 }
 
 /// From the string mask and a string of allowed notes
-impl TryFrom<JsonValue> for Mask {
+impl TryFrom<&JsonValue> for Mask {
     type Error = Error;
-    fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
+    fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
         Ok(Mask(
             many0(preceded(
                 space0,
@@ -185,6 +188,8 @@ impl TryFrom<JsonValue> for Mask {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use json::object;
 
     use super::*;
@@ -216,7 +221,7 @@ mod tests {
                 MaskAtoms::Note(3),
                 MaskAtoms::Note(5)
             ]),
-            Mask::try_from(object! {
+            Mask::try_from(&object! {
                 "instrument": "piano-sample",
                 "effects": [
                     "low reverb"
@@ -225,6 +230,70 @@ mod tests {
                 "tuning": 442,
                 "mask": "@4$4!100 a.cd"
             })
+            .unwrap()
+        );
+    }
+    #[test]
+    pub fn channel_parser() {
+        assert_eq!(
+            Channel {
+                instrument: Instrument::Expression {
+                    expr: Expr::from_str("sin(x)").unwrap(),
+                    resets: true
+                },
+                effects: vec![],
+                tuning: 442,
+                mask: Mask(vec![
+                    MaskAtoms::Octave(4),
+                    MaskAtoms::Length(4),
+                    MaskAtoms::Volume(100),
+                    MaskAtoms::Note(0),
+                    MaskAtoms::Rest,
+                    MaskAtoms::Note(3),
+                    MaskAtoms::Note(5)
+                ])
+            },
+            Channel::try_from(
+                &object! {"BPM": 60,
+                "instruments": {
+                    "piano-sample": {
+                        "type": "sample",
+                        "path": "../sound/piano.wav",
+                        "loop": false
+                    },
+                    "sine": {
+                        "type": "expression",
+                        "expression": "sin(x)",
+                        "resets": true
+                    },
+                    "the two": {
+                        "type": "mix",
+                        "first": "piano-sample",
+                        "second": "sine",
+                        "operator": "+"
+                    }
+                },
+                "effects": {
+                    "low reverb": {
+                        "base": "reverb",
+                        "mask": "!26 ..a."
+                    },
+                    "piano env": {}
+                },
+                "channels": {
+                    "piano": {
+                        "instrument": "piano-sample",
+                        "effects": [
+                            "low reverb"
+                        ],
+                        "notes": "aAbcCdDefFgG",
+                        "tuning": 442,
+                        "mask": "@4$4!100 a.cd"
+                    },
+                    "synth": {}
+                }},
+                "piano"
+            )
             .unwrap()
         );
     }
