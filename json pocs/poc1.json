@@ -16,13 +16,6 @@
                         "resets": true
                     }
                 },
-                "effects": {
-                    "low reverb": {
-                        "base": "reverb",
-                        "mask": "!26 ..a."
-                    },
-                    "piano env": {}
-                },
                 "channels": {
                     "piano": {
                         "instrument": "piano-sample",
