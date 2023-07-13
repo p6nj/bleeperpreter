@@ -11,13 +11,14 @@ use nom::character::complete::{char, digit1, space0};
 use nom::multi::many0;
 use nom::{character::complete::one_of, combinator::map_res, sequence::preceded, IResult};
 
+pub type Samples = Vec<i16>;
 pub struct Album {
     name: String,
     artist: String,
     tracks: HashMap<String, Track>,
 }
 
-struct Track {
+pub struct Track {
     bpm: u16,
     instruments: HashMap<String, Instrument>,
     channels: HashMap<String, Channel>,
@@ -26,7 +27,7 @@ struct Track {
 #[derive(PartialEq)]
 enum Instrument {
     Sample {
-        data: Vec<i16>,
+        data: Samples,
         r#loops: bool,
         resets: bool,
     },
@@ -58,7 +59,7 @@ impl Debug for Instrument {
 }
 
 #[derive(PartialEq, Debug)]
-struct Channel {
+pub struct Channel {
     instrument: Instrument,
     tuning: u16,
     mask: Mask,
