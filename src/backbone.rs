@@ -12,8 +12,9 @@ use nom::multi::many0;
 use nom::{character::complete::one_of, combinator::map_res, sequence::preceded, IResult};
 
 pub type Samples = Vec<i16>;
+
+pub struct Root(HashMap<String, Album>);
 pub struct Album {
-    name: String,
     artist: String,
     tracks: HashMap<String, Track>,
 }
@@ -21,7 +22,7 @@ pub struct Album {
 pub struct Track {
     bpm: u16,
     instruments: HashMap<String, Instrument>,
-    channels: HashMap<String, Channel>,
+    pub channels: HashMap<String, Channel>,
 }
 
 #[derive(PartialEq)]
