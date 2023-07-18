@@ -15,18 +15,18 @@ pub type Samples = Vec<i16>;
 
 pub struct Root(HashMap<String, Album>);
 pub struct Album {
-    artist: String,
-    tracks: HashMap<String, Track>,
+    pub artist: String,
+    pub tracks: HashMap<String, Track>,
 }
 
 pub struct Track {
-    bpm: u16,
-    instruments: HashMap<String, Instrument>,
+    pub bpm: u16,
+    pub instruments: HashMap<String, Instrument>,
     pub channels: HashMap<String, Channel>,
 }
 
 #[derive(PartialEq)]
-enum Instrument {
+pub enum Instrument {
     Sample {
         data: Samples,
         r#loops: bool,
@@ -61,9 +61,9 @@ impl Debug for Instrument {
 
 #[derive(PartialEq, Debug)]
 pub struct Channel {
-    instrument: Instrument,
-    tuning: u16,
-    mask: Mask,
+    pub instrument: Instrument,
+    pub tuning: u16,
+    pub mask: Mask,
 }
 
 #[derive(PartialEq, Debug)]
@@ -76,7 +76,7 @@ enum MaskAtoms {
 }
 
 #[derive(Debug, PartialEq)]
-struct Mask(Vec<MaskAtoms>);
+pub struct Mask(Vec<MaskAtoms>);
 
 fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
     map_res(one_of(notes), move |c| {

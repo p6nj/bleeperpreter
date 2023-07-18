@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use crate::backbone::{self, Samples};
-type Channel = HashMap<String, Samples>;
-type Track = HashMap<String, Channel>;
+type Track = HashMap<String, Samples>;
 type Album = HashMap<String, Track>;
 type Root = HashMap<String, Album>;
 impl backbone::Track {
@@ -19,8 +18,8 @@ impl backbone::Album {
     }
 }
 impl backbone::Channel {
-    pub fn process(&self) -> Channel {
-        Channel::new()
+    pub fn process(&self) -> Samples {
+        Samples::new()
     }
 }
 impl backbone::Root {
