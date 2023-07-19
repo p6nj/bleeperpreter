@@ -4,21 +4,13 @@
         "tracks": {
             "My First Song": {
                 "BPM": 60,
-                "instruments": {
-                    "piano-sample": {
-                        "type": "sample",
-                        "path": "sound/piano.wav",
-                        "loops": false
-                    },
-                    "sine": {
-                        "type": "expression",
-                        "expression": "sin(x)",
-                        "resets": true
-                    }
-                },
                 "channels": {
                     "piano": {
-                        "instrument": "piano-sample",
+                        "instrument": {
+                            "type": "sample",
+                            "path": "sound/piano.wav",
+                            "loops": false
+                        },
                         "effects": [
                             "low reverb"
                         ],
@@ -27,7 +19,11 @@
                         "mask": "@4$4!100 a.cd"
                     },
                     "synth": {
-                        "instrument": "sine",
+                        "instrument": {
+                            "type": "expression",
+                            "expression": "sin(x)",
+                            "resets": true
+                        },
                         "notes": "aAbcCdDefFgG",
                         "tuning": 442,
                         "mask": "@4$4!100 a.cd"

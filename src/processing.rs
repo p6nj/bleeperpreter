@@ -19,7 +19,14 @@ impl backbone::Album {
 }
 impl backbone::Channel {
     pub fn process(&self) -> Samples {
-        Samples::new()
+        match &self.instrument {
+            backbone::Instrument::Sample {
+                data,
+                r#loops,
+                resets,
+            } => todo!(),
+            backbone::Instrument::Expression { expr, resets } => todo!(),
+        }
     }
 }
 impl backbone::Root {

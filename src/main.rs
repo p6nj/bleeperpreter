@@ -2,10 +2,12 @@
 mod backbone;
 #[allow(dead_code)]
 mod jsons;
-#[allow(dead_code)]
-mod processing;
+// #[allow(dead_code)]
+// mod processing;
 #[allow(dead_code)]
 mod tags;
+
+use std::path::Path;
 
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -16,8 +18,8 @@ struct Arguments {
 }
 
 fn main() -> Result<()> {
-    let args = Arguments::parse();
-    jsons::parse(args.json_path).context("error parsing json file")?;
-    dbg!("coucou");
+    // let args = Arguments::parse();
+    // jsons::parse(args.json_path).context("error parsing json file")?;
+    // jsons::parse(Path::new("json pocs").join("poc1.json"))?
     Ok(())
 }

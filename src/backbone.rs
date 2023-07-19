@@ -1,9 +1,10 @@
+use derive_new::new;
 use hound::WavReader;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::str::FromStr;
 
-use anyhow::{Context, Error};
+use anyhow::{Context, Error, Ok};
 use json::JsonValue;
 use meval::Expr;
 use nom::branch::alt;
@@ -19,13 +20,13 @@ pub struct Album {
     pub tracks: HashMap<String, Track>,
 }
 
+#[derive(new)]
 pub struct Track {
     pub bpm: u16,
-    pub instruments: HashMap<String, Instrument>,
     pub channels: HashMap<String, Channel>,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum Instrument {
     Sample {
         data: Samples,
@@ -80,7 +81,7 @@ pub struct Mask(Vec<MaskAtoms>);
 
 fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
     map_res(one_of(notes), move |c| {
-        Ok::<MaskAtoms, Error>(MaskAtoms::Note(
+        Ok::<MaskAtoms>(MaskAtoms::Note(
             notes
                 .find(c)
                 .with_context(|| format!("unknown note: {}", c))?
@@ -91,24 +92,24 @@ fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms
 }
 
 fn rest<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
-    map_res(char('.'), move |_| Ok::<MaskAtoms, Error>(MaskAtoms::Rest))
+    map_res(char('.'), move |_| Ok::<MaskAtoms>(MaskAtoms::Rest))
 }
 
 fn length<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
     map_res(preceded(char('$'), map_res(digit1, str::parse)), move |n| {
-        Ok::<MaskAtoms, Error>(MaskAtoms::Length(n))
+        Ok::<MaskAtoms>(MaskAtoms::Length(n))
     })
 }
 
 fn octave<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
     map_res(preceded(char('@'), map_res(digit1, str::parse)), move |n| {
-        Ok::<MaskAtoms, Error>(MaskAtoms::Octave(n))
+        Ok::<MaskAtoms>(MaskAtoms::Octave(n))
     })
 }
 
 fn volume<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
     map_res(preceded(char('!'), map_res(digit1, str::parse)), move |n| {
-        Ok::<MaskAtoms, Error>(MaskAtoms::Volume(n))
+        Ok::<MaskAtoms>(MaskAtoms::Volume(n))
     })
 }
 
@@ -154,18 +155,15 @@ impl TryFrom<&JsonValue> for Instrument {
     }
 }
 
-impl Channel {
-    fn try_from(song_root: &JsonValue, target: &str) -> Result<Self, Error> {
+impl TryFrom<&JsonValue> for Channel {
+    type Error = Error;
+    fn try_from(value: &JsonValue) -> Result<Self, Error> {
         Ok(Channel {
-            instrument: Instrument::try_from(
-                &song_root["instruments"][song_root["channels"][target]["instrument"]
-                    .as_str()
-                    .context(err_field("instrument", "string"))?],
-            )?,
-            tuning: song_root["channels"][target]["tuning"]
+            instrument: (&value["instrument"]).try_into()?,
+            tuning: value["tuning"]
                 .as_u16()
                 .context(err_field("tuning", "unsigned 16-bit integer"))?,
-            mask: Mask::try_from(&song_root["channels"][target])?,
+            mask: Mask::try_from(value)?,
         })
     }
 }
@@ -200,6 +198,21 @@ impl TryFrom<&JsonValue> for Mask {
     }
 }
 
+impl TryFrom<&JsonValue> for Track {
+    type Error = Error;
+    fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
+        Ok(Track::new(
+            value["BPM"].as_u16().context(err_field("BPM", "u16"))?,
+            value["channels"]
+                .entries()
+                .map(move |(name, chan)| -> anyhow::Result<(String, Channel)> {
+                    Ok((name.to_string(), chan.try_into()?))
+                })
+                .collect::<anyhow::Result<HashMap<String, Channel>>>()?,
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -209,19 +222,25 @@ mod tests {
     use super::*;
     #[test]
     pub fn note_parser() {
-        assert_eq!(Ok(("iueg", MaskAtoms::Note(2))), note("abcde")("ciueg"));
+        assert_eq!(
+            ("iueg", MaskAtoms::Note(2)),
+            note("abcde")("ciueg").unwrap()
+        );
     }
     #[test]
     pub fn length_parser() {
-        assert_eq!(Ok(("iueg", MaskAtoms::Length(16))), length()("$16iueg"));
+        assert_eq!(
+            ("iueg", MaskAtoms::Length(16)),
+            length()("$16iueg").unwrap()
+        );
     }
     #[test]
     pub fn octave_parser() {
-        assert_eq!(Ok(("iueg", MaskAtoms::Octave(4))), octave()("@4iueg"));
+        assert_eq!(("iueg", MaskAtoms::Octave(4)), octave()("@4iueg").unwrap());
     }
     #[test]
     pub fn rest_parser() {
-        assert_eq!(Ok(("iueg", MaskAtoms::Rest)), rest()(".iueg"));
+        assert_eq!(("iueg", MaskAtoms::Rest), rest()(".iueg").unwrap());
     }
     #[test]
     pub fn mask_parser() {
@@ -278,42 +297,16 @@ mod tests {
                     MaskAtoms::Note(5)
                 ])
             },
-            Channel::try_from(
-                &object! {"BPM": 60,
-                "instruments": {
-                    "piano-sample": {
-                        "type": "sample",
-                        "path": "sound/piano.wav",
-                        "loop": false
-                    },
-                    "sine": {
-                        "type": "expression",
-                        "expression": "sin(x)",
-                        "resets": true
-                    },
-                    "the two": {
-                        "type": "mix",
-                        "first": "piano-sample",
-                        "second": "sine",
-                        "operator": "+"
-                    }
+            Channel::try_from(&object! {
+                "instrument": {
+                    "type": "expression",
+                    "expression": "sin(x)",
+                    "resets": true
                 },
-                "channels": {
-                    "piano": {
-                        "instrument": "piano-sample",
-                        "notes": "aAbcCdDefFgG",
-                        "tuning": 442,
-                        "mask": "@4$4!100 a.cd"
-                    },
-                    "synth": {
-                        "instrument": "sine",
-                        "notes": "aAbcCdDefFgG",
-                        "tuning": 442,
-                        "mask": "@4$4!100 a.cd"
-                    }
-                }},
-                "synth"
-            )
+                "notes": "aAbcCdDefFgG",
+                "tuning": 442,
+                "mask": "@4$4!100 a.cd"
+            })
             .unwrap()
         );
     }
