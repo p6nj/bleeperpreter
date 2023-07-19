@@ -15,6 +15,8 @@ use nom::{character::complete::one_of, combinator::map_res, sequence::preceded, 
 pub type Samples = Vec<i16>;
 
 pub struct Root(HashMap<String, Album>);
+
+#[derive(new)]
 pub struct Album {
     pub artist: String,
     pub tracks: HashMap<String, Track>,
@@ -209,6 +211,38 @@ impl TryFrom<&JsonValue> for Track {
                     Ok((name.to_string(), chan.try_into()?))
                 })
                 .collect::<anyhow::Result<HashMap<String, Channel>>>()?,
+        ))
+    }
+}
+
+impl TryFrom<&JsonValue> for Album {
+    type Error = Error;
+    fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
+        Ok(Album::new(
+            value["artist"]
+                .as_str()
+                .context(err_field("artist", "string"))?
+                .to_string(),
+            value["tracks"]
+                .entries()
+                .map(move |(name, track)| -> anyhow::Result<(String, Track)> {
+                    Ok((name.to_string(), track.try_into()?))
+                })
+                .collect::<anyhow::Result<HashMap<String, Track>>>()?,
+        ))
+    }
+}
+
+impl TryFrom<&JsonValue> for Root {
+    type Error = Error;
+    fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
+        Ok(Root(
+            value
+                .entries()
+                .map(move |(name, album)| -> anyhow::Result<(String, Album)> {
+                    Ok((name.to_string(), album.try_into()?))
+                })
+                .collect::<anyhow::Result<HashMap<String, Album>>>()?,
         ))
     }
 }
