@@ -14,15 +14,16 @@ use nom::{character::complete::one_of, combinator::map_res, sequence::preceded, 
 
 pub type Samples = Vec<i16>;
 
+#[derive(PartialEq, Debug)]
 pub struct Root(HashMap<String, Album>);
 
-#[derive(new)]
+#[derive(new, PartialEq, Debug)]
 pub struct Album {
     pub artist: String,
     pub tracks: HashMap<String, Track>,
 }
 
-#[derive(new)]
+#[derive(new, PartialEq, Debug)]
 pub struct Track {
     pub bpm: u16,
     pub channels: HashMap<String, Channel>,
@@ -62,7 +63,7 @@ impl Debug for Instrument {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, new)]
 pub struct Channel {
     pub instrument: Instrument,
     pub tuning: u16,
@@ -138,8 +139,8 @@ impl TryFrom<&JsonValue> for Instrument {
                 )
                 .context("can't open sample file")?
                 .samples()
-                .map(|result| result.unwrap())
-                .collect(),
+                .map(|result| -> anyhow::Result<i16> { Ok(result.context("reading sample file")?) })
+                .collect::<anyhow::Result<Vec<i16>>>()?,
                 loops: value["loops"].as_bool().unwrap_or(false),
                 resets: value["resets"].as_bool().unwrap_or(false),
             }),
@@ -340,6 +341,84 @@ mod tests {
                 "notes": "aAbcCdDefFgG",
                 "tuning": 442,
                 "mask": "@4$4!100 a.cd"
+            })
+            .unwrap()
+        );
+    }
+    #[test]
+    pub fn root_parser() {
+        assert_eq!(
+            Root(HashMap::from([(
+                "My First Album".to_string(),
+                Album::try_from(&object! {
+                    "artist": "me",
+                    "tracks": {
+                        "My First Song": {
+                            "BPM": 60,
+                            "channels": {
+                                "piano": {
+                                    "instrument": {
+                                        "type": "sample",
+                                        "path": "sound/piano.wav",
+                                        "loops": false
+                                    },
+                                    "effects": [
+                                        "low reverb"
+                                    ],
+                                    "notes": "aAbcCdDefFgG",
+                                    "tuning": 442,
+                                    "mask": "@4$4!100 a.cd"
+                                },
+                                "synth": {
+                                    "instrument": {
+                                        "type": "expression",
+                                        "expression": "sin(x)",
+                                        "resets": true
+                                    },
+                                    "notes": "aAbcCdDefFgG",
+                                    "tuning": 442,
+                                    "mask": "@4$4!100 a.cd"
+                                }
+                            }
+                        }
+                    }
+                })
+                .unwrap()
+            )])),
+            Root::try_from(&object! {
+                "My First Album": {
+                    "artist": "me",
+                    "tracks": {
+                        "My First Song": {
+                            "BPM": 60,
+                            "channels": {
+                                "piano": {
+                                    "instrument": {
+                                        "type": "sample",
+                                        "path": "sound/piano.wav",
+                                        "loops": false
+                                    },
+                                    "effects": [
+                                        "low reverb"
+                                    ],
+                                    "notes": "aAbcCdDefFgG",
+                                    "tuning": 442,
+                                    "mask": "@4$4!100 a.cd"
+                                },
+                                "synth": {
+                                    "instrument": {
+                                        "type": "expression",
+                                        "expression": "sin(x)",
+                                        "resets": true
+                                    },
+                                    "notes": "aAbcCdDefFgG",
+                                    "tuning": 442,
+                                    "mask": "@4$4!100 a.cd"
+                                }
+                            }
+                        }
+                    }
+                }
             })
             .unwrap()
         );
