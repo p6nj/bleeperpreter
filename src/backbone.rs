@@ -1,8 +1,12 @@
 use derive_new::new;
-use hound::WavReader;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::fs::File;
+use std::io::BufReader;
+use std::path::Path;
 use std::str::FromStr;
+use wave_stream::read_wav_from_file_path;
+use wave_stream::wave_reader::OpenWavReader;
 
 use anyhow::{Context, Error, Ok};
 use json::JsonValue;
@@ -11,8 +15,6 @@ use nom::branch::alt;
 use nom::character::complete::{char, digit1, space0};
 use nom::multi::many0;
 use nom::{character::complete::one_of, combinator::map_res, sequence::preceded, IResult};
-
-pub type Samples = Vec<i16>;
 
 #[derive(PartialEq, Debug)]
 pub struct Root(HashMap<String, Album>);
@@ -29,11 +31,10 @@ pub struct Track {
     pub channels: HashMap<String, Channel>,
 }
 
-#[derive(PartialEq, Clone)]
 pub enum Instrument {
     Sample {
-        data: Samples,
-        r#loops: bool,
+        wav: OpenWavReader<BufReader<File>>,
+        loops: bool,
         resets: bool,
     },
     Expression {
@@ -42,19 +43,47 @@ pub enum Instrument {
     },
 }
 
+impl PartialEq for Instrument {
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            Instrument::Sample {
+                wav: _,
+                loops,
+                resets,
+            } => match other {
+                Instrument::Sample {
+                    wav: _,
+                    loops: other_loops,
+                    resets: other_resets,
+                } => loops == other_loops && resets == other_resets,
+                Instrument::Expression { expr: _, resets: _ } => false,
+            },
+            Instrument::Expression { expr, resets } => match other {
+                Instrument::Sample {
+                    wav: _,
+                    loops: _,
+                    resets: _,
+                } => false,
+                Instrument::Expression {
+                    expr: other_expr,
+                    resets: other_resets,
+                } => expr == other_expr && resets == other_resets,
+            },
+        }
+    }
+}
+
 impl Debug for Instrument {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Instrument::Sample {
-                data,
-                r#loops,
+                wav: _,
+                loops,
                 resets,
             } => write!(
                 f,
-                "Sample {{ data: ({:?}), loops: {:?}, resets: {:?} }}",
-                data.len(),
-                r#loops,
-                resets
+                "Sample {{ wav: ({:?}), loops: {:?}, resets: {:?} }}",
+                "can't display", loops, resets
             ),
             Instrument::Expression { expr, resets } => {
                 write!(f, "Expression {{ expr: {:?}, resets: {:?} }}", expr, resets)
@@ -132,15 +161,11 @@ impl TryFrom<&JsonValue> for Instrument {
             .context(err_field("type", "string"))?
         {
             "sample" => Ok(Instrument::Sample {
-                data: WavReader::open(
+                wav: read_wav_from_file_path(Path::new(
                     value["path"]
                         .as_str()
                         .context(err_field("path", "string"))?,
-                )
-                .context("can't open sample file")?
-                .samples()
-                .map(|result| -> anyhow::Result<i16> { Ok(result.context("reading sample file")?) })
-                .collect::<anyhow::Result<Vec<i16>>>()?,
+                ))?,
                 loops: value["loops"].as_bool().unwrap_or(false),
                 resets: value["resets"].as_bool().unwrap_or(false),
             }),
@@ -234,9 +259,9 @@ impl TryFrom<&JsonValue> for Album {
     }
 }
 
-impl TryFrom<&JsonValue> for Root {
+impl TryFrom<JsonValue> for Root {
     type Error = Error;
-    fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
+    fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
         Ok(Root(
             value
                 .entries()
@@ -385,7 +410,7 @@ mod tests {
                 })
                 .unwrap()
             )])),
-            Root::try_from(&object! {
+            Root::try_from(object! {
                 "My First Album": {
                     "artist": "me",
                     "tracks": {
