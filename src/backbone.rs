@@ -1,20 +1,17 @@
-use derive_new::new;
-use std::collections::HashMap;
-use std::fmt::Debug;
-use std::fs::File;
-use std::io::BufReader;
-use std::path::Path;
-use std::str::FromStr;
-use wave_stream::read_wav_from_file_path;
-use wave_stream::wave_reader::OpenWavReader;
-
 use anyhow::{Context, Error, Ok};
+use derive_new::new;
 use json::JsonValue;
 use meval::Expr;
 use nom::branch::alt;
 use nom::character::complete::{char, digit1, space0};
 use nom::multi::many0;
 use nom::{character::complete::one_of, combinator::map_res, sequence::preceded, IResult};
+use rodio::Decoder;
+use std::collections::HashMap;
+use std::fmt::Debug;
+use std::fs::File;
+use std::io::BufReader;
+use std::str::FromStr;
 
 #[derive(PartialEq, Debug)]
 pub struct Root(HashMap<String, Album>);
@@ -33,7 +30,7 @@ pub struct Track {
 
 pub enum Instrument {
     Sample {
-        wav: OpenWavReader<BufReader<File>>,
+        wav: Decoder<BufReader<File>>,
         loops: bool,
         resets: bool,
     },
@@ -161,11 +158,11 @@ impl TryFrom<&JsonValue> for Instrument {
             .context(err_field("type", "string"))?
         {
             "sample" => Ok(Instrument::Sample {
-                wav: read_wav_from_file_path(Path::new(
+                wav: Decoder::new(BufReader::new(File::open(
                     value["path"]
                         .as_str()
                         .context(err_field("path", "string"))?,
-                ))?,
+                )?))?,
                 loops: value["loops"].as_bool().unwrap_or(false),
                 resets: value["resets"].as_bool().unwrap_or(false),
             }),

@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
-use crate::backbone::{self, Samples};
+use crate::backbone;
 type Track = HashMap<String, Samples>;
 type Album = HashMap<String, Track>;
 type Root = HashMap<String, Album>;
+type Samples = Vec<f32>;
 impl backbone::Track {
     pub fn process(&self) -> Track {
         self.channels
@@ -21,7 +22,7 @@ impl backbone::Channel {
     pub fn process(&self) -> Samples {
         match &self.instrument {
             backbone::Instrument::Sample {
-                data,
+                wav,
                 r#loops,
                 resets,
             } => todo!(),
