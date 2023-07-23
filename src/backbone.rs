@@ -106,7 +106,7 @@ pub enum MaskAtom {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Mask(pub Vec<MaskAtom>);
+pub struct Mask(pub u8, pub Vec<MaskAtom>);
 
 fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
     map_res(one_of(notes), move |c| {
@@ -197,20 +197,14 @@ impl TryFrom<&JsonValue> for Channel {
 impl TryFrom<&JsonValue> for Mask {
     type Error = Error;
     fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
+        let notes = value["notes"]
+            .as_str()
+            .context("the \"notes\" field is not a string")?;
         Ok(Mask(
+            notes.len().try_into()?,
             many0(preceded(
                 space0,
-                alt((
-                    note(
-                        value["notes"]
-                            .as_str()
-                            .context("the \"notes\" field is not a string")?,
-                    ),
-                    rest(),
-                    length(),
-                    octave(),
-                    volume(),
-                )),
+                alt((note(notes), rest(), length(), octave(), volume())),
             ))(
                 value["mask"]
                     .as_str()
@@ -296,15 +290,18 @@ mod tests {
     #[test]
     pub fn mask_parser() {
         assert_eq!(
-            Mask(vec![
-                MaskAtom::Octave(4),
-                MaskAtom::Length(4),
-                MaskAtom::Volume(100),
-                MaskAtom::Note(0),
-                MaskAtom::Rest,
-                MaskAtom::Note(3),
-                MaskAtom::Note(5)
-            ]),
+            Mask(
+                12,
+                vec![
+                    MaskAtom::Octave(4),
+                    MaskAtom::Length(4),
+                    MaskAtom::Volume(100),
+                    MaskAtom::Note(0),
+                    MaskAtom::Rest,
+                    MaskAtom::Note(3),
+                    MaskAtom::Note(5)
+                ]
+            ),
             Mask::try_from(&object! {
                 "instrument": "piano-sample",
                 "notes": "aAbcCdDefFgG",
@@ -338,15 +335,18 @@ mod tests {
                     resets: true
                 },
                 tuning: 442,
-                mask: Mask(vec![
-                    MaskAtom::Octave(4),
-                    MaskAtom::Length(4),
-                    MaskAtom::Volume(100),
-                    MaskAtom::Note(0),
-                    MaskAtom::Rest,
-                    MaskAtom::Note(3),
-                    MaskAtom::Note(5)
-                ])
+                mask: Mask(
+                    12,
+                    vec![
+                        MaskAtom::Octave(4),
+                        MaskAtom::Length(4),
+                        MaskAtom::Volume(100),
+                        MaskAtom::Note(0),
+                        MaskAtom::Rest,
+                        MaskAtom::Note(3),
+                        MaskAtom::Note(5)
+                    ]
+                )
             },
             Channel::try_from(&object! {
                 "instrument": {
