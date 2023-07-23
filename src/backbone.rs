@@ -97,7 +97,7 @@ pub struct Channel {
 }
 
 #[derive(PartialEq, Debug)]
-enum MaskAtoms {
+pub enum MaskAtom {
     Octave(u8),
     Length(u8),
     Volume(u8),
@@ -106,11 +106,11 @@ enum MaskAtoms {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Mask(Vec<MaskAtoms>);
+pub struct Mask(pub Vec<MaskAtom>);
 
-fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
+fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
     map_res(one_of(notes), move |c| {
-        Ok::<MaskAtoms>(MaskAtoms::Note(
+        Ok::<MaskAtom>(MaskAtom::Note(
             notes
                 .find(c)
                 .with_context(|| format!("unknown note: {}", c))?
@@ -120,25 +120,25 @@ fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms
     })
 }
 
-fn rest<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
-    map_res(char('.'), move |_| Ok::<MaskAtoms>(MaskAtoms::Rest))
+fn rest<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
+    map_res(char('.'), move |_| Ok::<MaskAtom>(MaskAtom::Rest))
 }
 
-fn length<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
+fn length<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
     map_res(preceded(char('$'), map_res(digit1, str::parse)), move |n| {
-        Ok::<MaskAtoms>(MaskAtoms::Length(n))
+        Ok::<MaskAtom>(MaskAtom::Length(n))
     })
 }
 
-fn octave<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
+fn octave<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
     map_res(preceded(char('@'), map_res(digit1, str::parse)), move |n| {
-        Ok::<MaskAtoms>(MaskAtoms::Octave(n))
+        Ok::<MaskAtom>(MaskAtom::Octave(n))
     })
 }
 
-fn volume<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtoms> {
+fn volume<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
     map_res(preceded(char('!'), map_res(digit1, str::parse)), move |n| {
-        Ok::<MaskAtoms>(MaskAtoms::Volume(n))
+        Ok::<MaskAtom>(MaskAtom::Volume(n))
     })
 }
 
@@ -279,37 +279,31 @@ mod tests {
     use super::*;
     #[test]
     pub fn note_parser() {
-        assert_eq!(
-            ("iueg", MaskAtoms::Note(2)),
-            note("abcde")("ciueg").unwrap()
-        );
+        assert_eq!(("iueg", MaskAtom::Note(2)), note("abcde")("ciueg").unwrap());
     }
     #[test]
     pub fn length_parser() {
-        assert_eq!(
-            ("iueg", MaskAtoms::Length(16)),
-            length()("$16iueg").unwrap()
-        );
+        assert_eq!(("iueg", MaskAtom::Length(16)), length()("$16iueg").unwrap());
     }
     #[test]
     pub fn octave_parser() {
-        assert_eq!(("iueg", MaskAtoms::Octave(4)), octave()("@4iueg").unwrap());
+        assert_eq!(("iueg", MaskAtom::Octave(4)), octave()("@4iueg").unwrap());
     }
     #[test]
     pub fn rest_parser() {
-        assert_eq!(("iueg", MaskAtoms::Rest), rest()(".iueg").unwrap());
+        assert_eq!(("iueg", MaskAtom::Rest), rest()(".iueg").unwrap());
     }
     #[test]
     pub fn mask_parser() {
         assert_eq!(
             Mask(vec![
-                MaskAtoms::Octave(4),
-                MaskAtoms::Length(4),
-                MaskAtoms::Volume(100),
-                MaskAtoms::Note(0),
-                MaskAtoms::Rest,
-                MaskAtoms::Note(3),
-                MaskAtoms::Note(5)
+                MaskAtom::Octave(4),
+                MaskAtom::Length(4),
+                MaskAtom::Volume(100),
+                MaskAtom::Note(0),
+                MaskAtom::Rest,
+                MaskAtom::Note(3),
+                MaskAtom::Note(5)
             ]),
             Mask::try_from(&object! {
                 "instrument": "piano-sample",
@@ -345,13 +339,13 @@ mod tests {
                 },
                 tuning: 442,
                 mask: Mask(vec![
-                    MaskAtoms::Octave(4),
-                    MaskAtoms::Length(4),
-                    MaskAtoms::Volume(100),
-                    MaskAtoms::Note(0),
-                    MaskAtoms::Rest,
-                    MaskAtoms::Note(3),
-                    MaskAtoms::Note(5)
+                    MaskAtom::Octave(4),
+                    MaskAtom::Length(4),
+                    MaskAtom::Volume(100),
+                    MaskAtom::Note(0),
+                    MaskAtom::Rest,
+                    MaskAtom::Note(3),
+                    MaskAtom::Note(5)
                 ])
             },
             Channel::try_from(&object! {
