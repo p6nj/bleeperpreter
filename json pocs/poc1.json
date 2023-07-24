@@ -21,7 +21,7 @@
                     "synth": {
                         "instrument": {
                             "type": "expression",
-                            "expression": "sin(x)",
+                            "expression": "sin(2*pi*n*x)",
                             "resets": true
                         },
                         "notes": "aAbcCdDefFgG",

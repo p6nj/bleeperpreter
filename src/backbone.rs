@@ -14,7 +14,7 @@ use std::io::BufReader;
 use std::str::FromStr;
 
 #[derive(PartialEq, Debug)]
-pub struct Root(HashMap<String, Album>);
+pub struct Root(pub HashMap<String, Album>);
 
 #[derive(new, PartialEq, Debug)]
 pub struct Album {
@@ -315,7 +315,7 @@ mod tests {
     pub fn instrument_parser() {
         assert_eq!(
             Instrument::Expression {
-                expr: Expr::from_str("sin(x)").unwrap(),
+                expr: Expr::from_str("sin(2*pi*n*x)").unwrap(),
                 resets: true
             },
             Instrument::try_from(&object! {
