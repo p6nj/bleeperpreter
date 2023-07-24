@@ -151,6 +151,7 @@ dependencies = [
  "nom 7.1.3",
  "realfft",
  "rodio",
+ "rubato",
  "rustfft",
  "serde_valid",
 ]
@@ -997,6 +998,18 @@ dependencies = [
  "hound",
  "lewton",
  "symphonia",
+]
+
+[[package]]
+name = "rubato"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6dd52e80cfc21894deadf554a5673002938ae4625f7a283e536f9cf7c17b0d5"
+dependencies = [
+ "num-complex",
+ "num-integer",
+ "num-traits",
+ "realfft",
 ]
 
 [[package]]

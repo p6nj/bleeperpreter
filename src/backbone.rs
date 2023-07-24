@@ -30,7 +30,7 @@ pub struct Track {
 
 pub enum Instrument {
     Sample {
-        wav: Decoder<BufReader<File>>,
+        wav: File,
         loops: bool,
         resets: bool,
     },
@@ -158,11 +158,11 @@ impl TryFrom<&JsonValue> for Instrument {
             .context(err_field("type", "string"))?
         {
             "sample" => Ok(Instrument::Sample {
-                wav: Decoder::new(BufReader::new(File::open(
+                wav: File::open(
                     value["path"]
                         .as_str()
                         .context(err_field("path", "string"))?,
-                )?))?,
+                )?,
                 loops: value["loops"].as_bool().unwrap_or(false),
                 resets: value["resets"].as_bool().unwrap_or(false),
             }),
