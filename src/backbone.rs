@@ -6,12 +6,15 @@ use nom::branch::alt;
 use nom::character::complete::{char, digit1, space0};
 use nom::multi::many0;
 use nom::{character::complete::one_of, combinator::map_res, sequence::preceded, IResult};
-use rodio::Decoder;
+use rodio::{Decoder, Source};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::BufReader;
 use std::str::FromStr;
+
+mod resampling;
+use resampling::resample;
 
 #[derive(PartialEq, Debug)]
 pub struct Root(pub HashMap<String, Album>);
@@ -30,12 +33,12 @@ pub struct Track {
 
 pub enum Instrument {
     Sample {
-        wav: File,
+        data: Vec<f32>,
         loops: bool,
         resets: bool,
     },
     Expression {
-        expr: Expr,
+        func: Box<dyn Fn(f64, f64) -> f64>,
         resets: bool,
     },
 }
@@ -44,27 +47,27 @@ impl PartialEq for Instrument {
     fn eq(&self, other: &Self) -> bool {
         match self {
             Instrument::Sample {
-                wav: _,
+                data: _,
                 loops,
                 resets,
             } => match other {
                 Instrument::Sample {
-                    wav: _,
+                    data: _,
                     loops: other_loops,
                     resets: other_resets,
                 } => loops == other_loops && resets == other_resets,
-                Instrument::Expression { expr: _, resets: _ } => false,
+                Instrument::Expression { func: _, resets: _ } => false,
             },
-            Instrument::Expression { expr, resets } => match other {
+            Instrument::Expression { func, resets } => match other {
                 Instrument::Sample {
-                    wav: _,
+                    data: _,
                     loops: _,
                     resets: _,
                 } => false,
                 Instrument::Expression {
-                    expr: other_expr,
+                    func: other_expr,
                     resets: other_resets,
-                } => expr == other_expr && resets == other_resets,
+                } => func(1f64, 1f64) == other_expr(1f64, 1f64) && resets == other_resets,
             },
         }
     }
@@ -74,16 +77,20 @@ impl Debug for Instrument {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Instrument::Sample {
-                wav: _,
+                data: _,
                 loops,
                 resets,
             } => write!(
                 f,
-                "Sample {{ wav: ({:?}), loops: {:?}, resets: {:?} }}",
+                "Sample {{ data: ({:?}), loops: {:?}, resets: {:?} }}",
                 "can't display", loops, resets
             ),
-            Instrument::Expression { expr, resets } => {
-                write!(f, "Expression {{ expr: {:?}, resets: {:?} }}", expr, resets)
+            Instrument::Expression { func, resets } => {
+                write!(
+                    f,
+                    "Expression {{ func: {:?}, resets: {:?} }}",
+                    "can't display", resets
+                )
             }
         }
     }
@@ -158,21 +165,41 @@ impl TryFrom<&JsonValue> for Instrument {
             .context(err_field("type", "string"))?
         {
             "sample" => Ok(Instrument::Sample {
-                wav: File::open(
-                    value["path"]
-                        .as_str()
-                        .context(err_field("path", "string"))?,
-                )?,
+                data: {
+                    let decoder = Decoder::new(BufReader::new(File::open(
+                        value["path"]
+                            .as_str()
+                            .context(err_field("path", "string"))?,
+                    )?))?;
+                    {
+                        let from_sr = decoder.sample_rate();
+                        let channels = decoder.channels();
+                        resample(
+                            decoder
+                                .convert_samples::<f32>()
+                                .enumerate()
+                                .filter(|(i, _)| i % (channels as usize) == 0)
+                                .map(move |(_, e)| e)
+                                .collect(),
+                            from_sr.into(),
+                            48000.into(),
+                        )?
+                    }
+                },
                 loops: value["loops"].as_bool().unwrap_or(false),
                 resets: value["resets"].as_bool().unwrap_or(false),
             }),
             "expression" => Ok(Instrument::Expression {
-                expr: Expr::from_str(
-                    value["expression"]
-                        .as_str()
-                        .context(err_field("expression", "string"))?,
-                )
-                .context("can't parse expression")?,
+                func: Box::new(
+                    Expr::from_str(
+                        value["expression"]
+                            .as_str()
+                            .context(err_field("expression", "string"))?,
+                    )
+                    .context("can't parse expression")?
+                    .bind2("t", "n")
+                    .context("binding time and note variables")?,
+                ),
                 resets: value["resets"].as_bool().unwrap_or(false),
             }),
             _ => Err(Error::msg("unknown instrument type")),
@@ -315,7 +342,12 @@ mod tests {
     pub fn instrument_parser() {
         assert_eq!(
             Instrument::Expression {
-                expr: Expr::from_str("sin(2*pi*n*x)").unwrap(),
+                func: Box::new(
+                    Expr::from_str("sin(2*pi*n*x)")
+                        .unwrap()
+                        .bind2("t", "n")
+                        .unwrap()
+                ),
                 resets: true
             },
             Instrument::try_from(&object! {
@@ -331,7 +363,12 @@ mod tests {
         assert_eq!(
             Channel {
                 instrument: Instrument::Expression {
-                    expr: Expr::from_str("sin(x)").unwrap(),
+                    func: Box::new(
+                        Expr::from_str("sin(2*pi*n*x)")
+                            .unwrap()
+                            .bind2("t", "n")
+                            .unwrap()
+                    ),
                     resets: true
                 },
                 tuning: 442,
@@ -375,7 +412,7 @@ mod tests {
                                 "piano": {
                                     "instrument": {
                                         "type": "sample",
-                                        "path": "sound/piano.wav",
+                                        "path": "sound/piano.data",
                                         "loops": false
                                     },
                                     "effects": [
@@ -411,7 +448,7 @@ mod tests {
                                 "piano": {
                                     "instrument": {
                                         "type": "sample",
-                                        "path": "sound/piano.wav",
+                                        "path": "sound/piano.data",
                                         "loops": false
                                     },
                                     "effects": [
