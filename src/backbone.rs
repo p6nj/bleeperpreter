@@ -1,4 +1,4 @@
-use anyhow::{Context, Error, Ok};
+use anyhow::{Context, Error, Ok, Result};
 use derive_new::new;
 use json::JsonValue;
 use meval::Expr;
@@ -15,6 +15,11 @@ use std::str::FromStr;
 
 mod resampling;
 use resampling::resample;
+
+mod pitch_shift;
+use pitch_shift::PitchShifter;
+
+const SAMPLE_RATE: u32 = 48000;
 
 #[derive(PartialEq, Debug)]
 pub struct Root(pub HashMap<String, Album>);
@@ -33,12 +38,13 @@ pub struct Track {
 
 pub enum Instrument {
     Sample {
+        /// this vector of samples is already set to the project sample rate.
         data: Vec<f32>,
         loops: bool,
         resets: bool,
     },
     Expression {
-        func: Box<dyn Fn(f64, f64) -> f64>,
+        expr: Expr,
         resets: bool,
     },
 }
@@ -56,20 +62,76 @@ impl PartialEq for Instrument {
                     loops: other_loops,
                     resets: other_resets,
                 } => loops == other_loops && resets == other_resets,
-                Instrument::Expression { func: _, resets: _ } => false,
+                Instrument::Expression { expr: _, resets: _ } => false,
             },
-            Instrument::Expression { func, resets } => match other {
+            Instrument::Expression { expr, resets } => match other {
                 Instrument::Sample {
                     data: _,
                     loops: _,
                     resets: _,
                 } => false,
                 Instrument::Expression {
-                    func: other_expr,
+                    expr: other_expr,
                     resets: other_resets,
-                } => func(1f64, 1f64) == other_expr(1f64, 1f64) && resets == other_resets,
+                } => expr == other_expr && resets == other_resets,
             },
         }
+    }
+}
+
+impl<'a> Instrument {
+    pub fn gen(
+        &'a self,
+        notes: u8,
+    ) -> Result<(
+        Option<impl Fn(usize, u8) -> Vec<f32>>,
+        Option<impl FnMut(usize, u8) -> Vec<f32> + 'a>,
+    )> {
+        Ok(match self {
+            Self::Expression { expr, resets } => {
+                let func = expr.clone().bind2("t", "n")?;
+                (
+                    Some(move |len: usize, n: u8| -> Vec<f32> {
+                        (1..len)
+                            .map(|i| {
+                                func(i as f64, 2.0_f64.powf((n as f64) / (notes as f64))) as f32
+                            })
+                            .collect()
+                    }),
+                    None,
+                )
+            }
+            Self::Sample {
+                data,
+                loops,
+                resets,
+            } => {
+                let mut shifter = PitchShifter::new(50, SAMPLE_RATE as usize);
+                (
+                    None,
+                    Some(move |len: usize, n: u8| -> Vec<f32> {
+                        let data = data.clone();
+                        let mut in_b: Vec<f32> = match len > data.len() {
+                            true => match loops {
+                                true => data
+                                    .repeat((len - data.len()) % data.len())
+                                    .split_at(len)
+                                    .0
+                                    .into(),
+                                false => {
+                                    let slen = data.len();
+                                    [data, vec![0f32; len - slen]].concat()
+                                }
+                            },
+                            false => data.split_at(len).0.into(),
+                        };
+                        let mut out_b = vec![0.0; in_b.len()];
+                        shifter.shift_pitch(16, n.into(), notes.into(), &mut in_b, &mut out_b);
+                        out_b
+                    }),
+                )
+            }
+        })
     }
 }
 
@@ -85,10 +147,10 @@ impl Debug for Instrument {
                 "Sample {{ data: ({:?}), loops: {:?}, resets: {:?} }}",
                 "can't display", loops, resets
             ),
-            Instrument::Expression { func, resets } => {
+            Instrument::Expression { expr, resets } => {
                 write!(
                     f,
-                    "Expression {{ func: {:?}, resets: {:?} }}",
+                    "Expression {{ expr: {:?}, resets: {:?} }}",
                     "can't display", resets
                 )
             }
@@ -182,7 +244,7 @@ impl TryFrom<&JsonValue> for Instrument {
                                 .map(move |(_, e)| e)
                                 .collect(),
                             from_sr.into(),
-                            48000.into(),
+                            SAMPLE_RATE as f64,
                         )?
                     }
                 },
@@ -190,16 +252,12 @@ impl TryFrom<&JsonValue> for Instrument {
                 resets: value["resets"].as_bool().unwrap_or(false),
             }),
             "expression" => Ok(Instrument::Expression {
-                func: Box::new(
-                    Expr::from_str(
-                        value["expression"]
-                            .as_str()
-                            .context(err_field("expression", "string"))?,
-                    )
-                    .context("can't parse expression")?
-                    .bind2("t", "n")
-                    .context("binding time and note variables")?,
-                ),
+                expr: Expr::from_str(
+                    value["expression"]
+                        .as_str()
+                        .context(err_field("expression", "string"))?,
+                )
+                .context("can't parse expression")?,
                 resets: value["resets"].as_bool().unwrap_or(false),
             }),
             _ => Err(Error::msg("unknown instrument type")),
@@ -342,12 +400,7 @@ mod tests {
     pub fn instrument_parser() {
         assert_eq!(
             Instrument::Expression {
-                func: Box::new(
-                    Expr::from_str("sin(2*pi*n*x)")
-                        .unwrap()
-                        .bind2("t", "n")
-                        .unwrap()
-                ),
+                expr: Expr::from_str("sin(2*pi*n*x)").unwrap(),
                 resets: true
             },
             Instrument::try_from(&object! {
@@ -363,12 +416,7 @@ mod tests {
         assert_eq!(
             Channel {
                 instrument: Instrument::Expression {
-                    func: Box::new(
-                        Expr::from_str("sin(2*pi*n*x)")
-                            .unwrap()
-                            .bind2("t", "n")
-                            .unwrap()
-                    ),
+                    expr: Expr::from_str("sin(2*pi*n*x)").unwrap(),
                     resets: true
                 },
                 tuning: 442,
