@@ -23,6 +23,6 @@ fn main() -> Result<()> {
     // jsons::parse(args.json_path).context("error parsing json file")?;
     // jsons::parse(Path::new("json pocs").join("poc1.json"))?
     let mut parsed: Root = jsons::parse(Path::new("json pocs").join("poc1.json"))?.try_into()?;
-    parsed.process()?;
+    parsed.mix()?;
     Ok(())
 }

@@ -4,11 +4,15 @@ use crate::backbone::{self, Instrument, MaskAtom};
 use anyhow::Result;
 
 type Track = HashMap<String, Samples>;
-type Album = HashMap<String, Track>;
+type Album = (String, HashMap<String, Track>);
 type Root = HashMap<String, Album>;
 type Samples = Vec<f32>;
+
+type MixedAlbum = (String, HashMap<String, Samples>);
+type MixedRoot = HashMap<String, MixedAlbum>;
+
 impl backbone::Track {
-    pub fn process(&mut self) -> Result<Track> {
+    fn process(&mut self) -> Result<Track> {
         Ok(self
             .channels
             .iter_mut()
@@ -18,20 +22,57 @@ impl backbone::Track {
             .collect::<Result<Track>>()?)
     }
 }
+
 impl backbone::Album {
-    pub fn process(&mut self) -> Result<Album> {
-        Ok(self
-            .tracks
-            .iter_mut()
-            .map(|(name, track)| -> Result<(String, Track)> {
-                Ok((name.clone(), track.process()?))
-            })
-            .collect::<Result<Album>>()?)
+    fn process(&mut self) -> Result<Album> {
+        Ok((
+            self.artist.clone(),
+            self.tracks
+                .iter_mut()
+                .map(|(name, track)| -> Result<(String, Track)> {
+                    Ok((name.clone(), track.process()?))
+                })
+                .collect::<Result<HashMap<String, Track>>>()?,
+        ))
+    }
+    fn mix(&mut self) -> Result<MixedAlbum> {
+        let processed = self.process()?;
+        Ok((
+            processed.0.clone(),
+            processed
+                .1
+                .iter()
+                .map(|(name, track)| {
+                    (
+                        name.clone(),
+                        track.iter().fold(
+                            vec![
+                                0f32;
+                                track
+                                    .iter()
+                                    .map(|(_, x)| x)
+                                    .max_by(|x, y| x.len().cmp(&y.len()))
+                                    .unwrap()
+                                    .len()
+                            ],
+                            move |acc, (_, samples)| {
+                                // dbg!(acc.len());
+                                samples
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(i, s)| acc.get(i).unwrap() + (*s / (track.len() as f32)))
+                                    .collect()
+                            },
+                        ),
+                    )
+                })
+                .collect::<HashMap<String, Samples>>(),
+        ))
     }
 }
 
 impl backbone::Channel {
-    pub fn process(&mut self, bpm: &u16) -> Result<Samples> {
+    fn process(&mut self, bpm: &u16) -> Result<Samples> {
         let sr = 48000u32;
         let mut octave = 4u8;
         let mut length = 4u8;
@@ -47,11 +88,11 @@ impl backbone::Channel {
         };
         let expr = match &self.instrument {
             Instrument::Sample {
-                data,
-                loops,
-                resets,
+                data: _,
+                loops: _,
+                resets: _,
             } => false,
-            Instrument::Expression { expr, resets } => true,
+            Instrument::Expression { expr: _, resets: _ } => true,
         };
         let gensamples = self.instrument.gen(self.mask.0)?;
         match expr {
@@ -97,7 +138,7 @@ impl backbone::Channel {
 }
 
 impl backbone::Root {
-    pub fn process(&mut self) -> Result<Root> {
+    fn process(&mut self) -> Result<Root> {
         Ok(self
             .0
             .iter_mut()
@@ -105,5 +146,14 @@ impl backbone::Root {
                 Ok((name.clone(), album.process()?))
             })
             .collect::<Result<Root>>()?)
+    }
+    pub fn mix(&mut self) -> Result<MixedRoot> {
+        Ok(self
+            .0
+            .iter_mut()
+            .map(|(name, album)| -> Result<(String, MixedAlbum)> {
+                Ok((name.clone(), album.mix()?))
+            })
+            .collect::<Result<MixedRoot>>()?)
     }
 }
