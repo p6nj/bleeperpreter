@@ -45,25 +45,17 @@ impl backbone::Album {
                 .map(|(name, track)| {
                     (
                         name.clone(),
-                        track.iter().fold(
-                            vec![
-                                0f32;
-                                track
-                                    .iter()
-                                    .map(|(_, x)| x)
-                                    .max_by(|x, y| x.len().cmp(&y.len()))
-                                    .unwrap()
-                                    .len()
-                            ],
-                            move |acc, (_, samples)| {
-                                // dbg!(acc.len());
+                        track
+                            .iter()
+                            .fold(Vec::<f32>::new(), move |acc, (_, samples)| {
                                 samples
                                     .iter()
                                     .enumerate()
-                                    .map(|(i, s)| acc.get(i).unwrap() + (*s / (track.len() as f32)))
+                                    .map(|(i, s)| {
+                                        acc.get(i).unwrap_or(&0f32) + (*s / (track.len() as f32))
+                                    })
                                     .collect()
-                            },
-                        ),
+                            }),
                     )
                 })
                 .collect::<HashMap<String, Samples>>(),
