@@ -19,7 +19,7 @@ use resampling::resample;
 mod pitch_shift;
 use pitch_shift::PitchShifter;
 
-const SAMPLE_RATE: u32 = 48000;
+pub const SAMPLE_RATE: u32 = 48000;
 
 #[derive(PartialEq, Debug)]
 pub struct Root(pub HashMap<String, Album>);
