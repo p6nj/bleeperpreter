@@ -1,11 +1,9 @@
-use std::collections::HashMap;
-mod error;
 use crate::backbone::{self, Instrument, MaskAtom};
 use anyhow::Result;
+use std::collections::HashMap;
 
 type Track = HashMap<String, Samples>;
 type Album = (String, HashMap<String, Track>);
-type Root = HashMap<String, Album>;
 type Samples = Vec<f32>;
 
 type MixedAlbum = (String, HashMap<String, Samples>);
@@ -130,15 +128,6 @@ impl backbone::Channel {
 }
 
 impl backbone::Root {
-    fn process(mut self) -> Result<Root> {
-        Ok(self
-            .0
-            .iter_mut()
-            .map(|(name, album)| -> Result<(String, Album)> {
-                Ok((name.clone(), album.process()?))
-            })
-            .collect::<Result<Root>>()?)
-    }
     pub fn mix(mut self) -> Result<MixedRoot> {
         Ok(self
             .0

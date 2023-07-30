@@ -144,15 +144,11 @@ impl Debug for Instrument {
                 resets,
             } => write!(
                 f,
-                "Sample {{ data: ({:?}), loops: {:?}, resets: {:?} }}",
+                "Sample {{ data: ({}), loops: {:?}, resets: {:?} }}",
                 "can't display", loops, resets
             ),
             Instrument::Expression { expr, resets } => {
-                write!(
-                    f,
-                    "Expression {{ expr: {:?}, resets: {:?} }}",
-                    "can't display", resets
-                )
+                write!(f, "Expression {{ expr: {:?}, resets: {:?} }}", expr, resets)
             }
         }
     }
@@ -213,10 +209,6 @@ fn volume<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
 
 fn err_field(field: &str, r#type: &str) -> String {
     format!("field \"{}\" is not a \"{}\"", field, r#type)
-}
-
-fn err_parse(r#type: &str, name: &str) -> String {
-    format!("can't parse {} \"{}\"", r#type, name)
 }
 
 impl TryFrom<&JsonValue> for Instrument {

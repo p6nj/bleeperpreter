@@ -7,6 +7,8 @@ edition = "2021"
 anyhow = "1.0.71"
 clap = { version = "4.3.10", features = ["derive"] }
 derive-new = "0.5.9"
+dirs = "5.0.1"
+hound = "3.5.0"
 id3 = "1.7.0"
 json = "0.12.4"
 meval = "0.2.0"
