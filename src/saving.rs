@@ -1,9 +1,9 @@
 use std::{
-    fs::{create_dir, File},
+    fs::create_dir,
     path::{Path, PathBuf},
 };
 
-use crate::{backbone::SAMPLE_RATE, processing::MixedRoot};
+use crate::{backbone::SAMPLE_RATE, processing::MixedRoot, tags};
 use anyhow::{Context, Ok, Result};
 use dirs::home_dir;
 use hound::{SampleFormat, WavSpec};
@@ -23,14 +23,18 @@ pub fn save(mix: &MixedRoot) -> Result<()> {
             album_data
                 .iter()
                 .try_for_each(|(track, track_data)| -> Result<()> {
-                    let mut writer = hound::WavWriter::create(
-                        album_dir.join(track).with_extension("wav"),
-                        spec,
-                    )?;
+                    let filename = album_dir.join(track).with_extension("wav");
+                    let mut writer = hound::WavWriter::create(&filename, spec)?;
                     track_data
                         .iter()
                         .map(|sample| (sample * (i16::MAX as f32)) as i16)
                         .try_for_each(|sample| writer.write_sample(sample))?;
+                    // let filename = filename
+                    //     .as_os_str()
+                    //     .to_str()
+                    //     .context("filename has invalid utf-8")?;
+                    // tags::apply(filename, album, artist)
+                    //     .with_context(|| format!("can't tag {}", filename))?;
                     Ok(())
                 })?;
             Ok(())

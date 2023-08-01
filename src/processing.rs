@@ -1,5 +1,9 @@
 use crate::backbone::{self, Instrument, MaskAtom};
 use anyhow::Result;
+use rayon::{
+    iter::IntoParallelIterator,
+    prelude::{IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator},
+};
 use std::collections::HashMap;
 
 type Track = HashMap<String, Samples>;
@@ -13,7 +17,7 @@ impl backbone::Track {
     fn process(&mut self) -> Result<Track> {
         Ok(self
             .channels
-            .iter_mut()
+            .par_iter_mut()
             .map(|(name, channel)| -> Result<(String, Samples)> {
                 Ok((name.clone(), channel.process(&self.bpm)?))
             })
@@ -44,16 +48,21 @@ impl backbone::Album {
                     (
                         name.clone(),
                         track
-                            .iter()
-                            .fold(Vec::<f32>::new(), move |acc, (_, samples)| {
-                                samples
-                                    .iter()
-                                    .enumerate()
-                                    .map(|(i, s)| {
-                                        acc.get(i).unwrap_or(&0f32) + (*s / (track.len() as f32))
-                                    })
-                                    .collect()
-                            }),
+                            .par_iter()
+                            .fold(
+                                || Vec::<f32>::new(),
+                                move |acc, (_, samples)| {
+                                    samples
+                                        .iter()
+                                        .enumerate()
+                                        .map(|(i, s)| {
+                                            acc.get(i).unwrap_or(&0f32)
+                                                + (*s / (track.len() as f32))
+                                        })
+                                        .collect()
+                                },
+                            )
+                            .reduce(|| Vec::<f32>::new(), move |a, b| [a, b].concat()),
                     )
                 })
                 .collect::<HashMap<String, Samples>>(),
