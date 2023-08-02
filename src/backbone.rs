@@ -6,6 +6,7 @@ use nom::branch::alt;
 use nom::character::complete::{char, digit1, space0};
 use nom::multi::many0;
 use nom::{character::complete::one_of, combinator::map_res, sequence::preceded, IResult};
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use rodio::{Decoder, Source};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -84,17 +85,19 @@ impl<'a> Instrument {
         &'a self,
         notes: u8,
     ) -> Result<(
-        Option<impl Fn(usize, u8) -> Vec<f32>>,
-        Option<impl FnMut(usize, u8) -> Vec<f32> + 'a>,
+        Option<impl Fn(usize, u8, u8) -> Vec<f32>>,
+        Option<impl FnMut(usize, u8, u8) -> Vec<f32> + 'a>,
     )> {
         Ok(match self {
             Self::Expression { expr, resets } => {
                 let func = expr.clone().bind2("t", "n")?;
                 (
-                    Some(move |len: usize, n: u8| -> Vec<f32> {
+                    Some(move |len: usize, n: u8, volume: u8| -> Vec<f32> {
                         (1..len)
                             .map(|i| {
-                                func(i as f64, 2.0_f64.powf((n as f64) / (notes as f64))) as f32
+                                (func(i as f64, 2.0_f64.powf((n as f64) / (notes as f64)))
+                                    * ((volume as f64) / 100f64))
+                                    as f32
                             })
                             .collect()
                     }),
@@ -109,9 +112,9 @@ impl<'a> Instrument {
                 let mut shifter = PitchShifter::new(50, SAMPLE_RATE as usize);
                 (
                     None,
-                    Some(move |len: usize, n: u8| -> Vec<f32> {
+                    Some(move |len: usize, n: u8, volume: u8| -> Vec<f32> {
                         let data = data.clone();
-                        let mut in_b: Vec<f32> = match len > data.len() {
+                        let in_b: Vec<f32> = match len > data.len() {
                             true => match loops {
                                 true => data
                                     .repeat((len - data.len()) % data.len())
@@ -126,7 +129,16 @@ impl<'a> Instrument {
                             false => data.split_at(len).0.into(),
                         };
                         let mut out_b = vec![0.0; in_b.len()];
-                        shifter.shift_pitch(16, n.into(), notes.into(), &mut in_b, &mut out_b);
+                        shifter.shift_pitch(
+                            16,
+                            n.into(),
+                            notes.into(),
+                            &mut in_b
+                                .par_iter()
+                                .map(|sample| sample * ((volume as f32) / 100f32))
+                                .collect::<Vec<f32>>(),
+                            &mut out_b,
+                        );
                         out_b
                     }),
                 )

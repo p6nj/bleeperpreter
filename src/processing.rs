@@ -1,9 +1,6 @@
 use crate::backbone::{self, Instrument, MaskAtom};
 use anyhow::Result;
-use rayon::{
-    iter::IntoParallelIterator,
-    prelude::{IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator},
-};
+use rayon::prelude::{IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
 use std::collections::HashMap;
 
 type Track = HashMap<String, Samples>;
@@ -74,17 +71,17 @@ impl backbone::Channel {
     fn process(&mut self, bpm: &u16) -> Result<Samples> {
         let sr = 48000u32;
         let mut octave = 4u8;
-        let mut length = 4u8;
         let mut volume = 100u8;
-        let mut real_length = 0;
 
         let mut result = vec![];
-        let genlength = move || -> Result<usize> {
+        let genlength = move |length: u8| -> Result<usize> {
             Ok(
                 ((((((length as u16) * bpm) as f64) / 240f64) * (sr as f64)).trunc() as u32)
                     .try_into()?,
             )
         };
+        let mut real_length = genlength(4)?;
+
         let expr = match &self.instrument {
             Instrument::Sample {
                 data: _,
@@ -98,19 +95,15 @@ impl backbone::Channel {
             true => {
                 let gen = gensamples.0.unwrap();
                 for a in self.mask.1.iter() {
-                    match *a {
+                    match *dbg!(a) {
                         MaskAtom::Octave(o) => octave = o,
-                        MaskAtom::Length(l) => length = l,
+                        MaskAtom::Length(l) => real_length = genlength(l)?,
                         MaskAtom::Volume(v) => volume = v,
-                        MaskAtom::Note(n) => result.append(&mut gen(real_length, n)),
+                        MaskAtom::Note(n) => {
+                            result.append(&mut gen(real_length, n * octave, volume))
+                        }
                         MaskAtom::Rest => result.append(&mut vec![0f32; real_length]),
                     };
-                    match *a {
-                        MaskAtom::Length(_) | MaskAtom::Octave(_) | MaskAtom::Volume(_) => {
-                            real_length = genlength()?
-                        }
-                        _ => {}
-                    }
                 }
             }
             false => {
@@ -118,17 +111,13 @@ impl backbone::Channel {
                 for a in self.mask.1.iter() {
                     match *a {
                         MaskAtom::Octave(o) => octave = o,
-                        MaskAtom::Length(l) => length = l,
+                        MaskAtom::Length(l) => real_length = genlength(l)?,
                         MaskAtom::Volume(v) => volume = v,
-                        MaskAtom::Note(n) => result.append(&mut gen(real_length, n)),
+                        MaskAtom::Note(n) => {
+                            result.append(&mut gen(real_length, n * octave, volume))
+                        }
                         MaskAtom::Rest => result.append(&mut vec![0f32; real_length]),
                     };
-                    match *a {
-                        MaskAtom::Length(_) | MaskAtom::Octave(_) | MaskAtom::Volume(_) => {
-                            real_length = genlength()?
-                        }
-                        _ => {}
-                    }
                 }
             }
         }
