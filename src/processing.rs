@@ -95,12 +95,12 @@ impl backbone::Channel {
             true => {
                 let gen = gensamples.0.unwrap();
                 for a in self.mask.1.iter() {
-                    match *dbg!(a) {
-                        MaskAtom::Octave(o) => octave = o,
+                    match *a {
+                        MaskAtom::Octave(o) => octave = u8::from(o) - 1,
                         MaskAtom::Length(l) => real_length = genlength(l)?,
                         MaskAtom::Volume(v) => volume = v,
                         MaskAtom::Note(n) => {
-                            result.append(&mut gen(real_length, n * octave, volume))
+                            result.append(&mut gen(real_length, n, octave, volume))
                         }
                         MaskAtom::Rest => result.append(&mut vec![0f32; real_length]),
                     };
@@ -110,11 +110,11 @@ impl backbone::Channel {
                 let mut gen = gensamples.1.unwrap();
                 for a in self.mask.1.iter() {
                     match *a {
-                        MaskAtom::Octave(o) => octave = o,
+                        MaskAtom::Octave(o) => octave = u8::from(o) - 1,
                         MaskAtom::Length(l) => real_length = genlength(l)?,
                         MaskAtom::Volume(v) => volume = v,
                         MaskAtom::Note(n) => {
-                            result.append(&mut gen(real_length, n * octave, volume))
+                            result.append(&mut gen(real_length, n, octave, volume))
                         }
                         MaskAtom::Rest => result.append(&mut vec![0f32; real_length]),
                     };

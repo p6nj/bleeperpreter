@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::BufReader;
+use std::num::NonZeroU8;
 use std::str::FromStr;
 
 mod resampling;
@@ -85,22 +86,29 @@ impl<'a> Instrument {
         &'a self,
         notes: u8,
     ) -> Result<(
-        Option<impl Fn(usize, u8, u8) -> Vec<f32>>,
-        Option<impl FnMut(usize, u8, u8) -> Vec<f32> + 'a>,
+        Option<impl Fn(usize, u8, u8, u8) -> Vec<f32>>,
+        Option<impl FnMut(usize, u8, u8, u8) -> Vec<f32> + 'a>,
     )> {
         Ok(match self {
             Self::Expression { expr, resets } => {
-                let func = expr.clone().bind2("t", "n")?;
+                let func = expr.clone().bind2("t", "f")?;
                 (
-                    Some(move |len: usize, n: u8, volume: u8| -> Vec<f32> {
-                        (1..len)
-                            .map(|i| {
-                                (func(i as f64, 2.0_f64.powf((n as f64) / (notes as f64)))
-                                    * ((volume as f64) / 100f64))
-                                    as f32
-                            })
-                            .collect()
-                    }),
+                    Some(
+                        move |len: usize, n: u8, octave: u8, volume: u8| -> Vec<f32> {
+                            (1..len)
+                                .map(|i| {
+                                    (func(
+                                        (i as f64) / (SAMPLE_RATE as f64),
+                                        110f64
+                                            * 2.0_f64.powf(
+                                                ((notes * octave + n) as f64) / (notes as f64),
+                                            ),
+                                    ) * ((volume as f64) / 100f64))
+                                        as f32
+                                })
+                                .collect()
+                        },
+                    ),
                     None,
                 )
             }
@@ -112,35 +120,37 @@ impl<'a> Instrument {
                 let mut shifter = PitchShifter::new(50, SAMPLE_RATE as usize);
                 (
                     None,
-                    Some(move |len: usize, n: u8, volume: u8| -> Vec<f32> {
-                        let data = data.clone();
-                        let in_b: Vec<f32> = match len > data.len() {
-                            true => match loops {
-                                true => data
-                                    .repeat((len - data.len()) % data.len())
-                                    .split_at(len)
-                                    .0
-                                    .into(),
-                                false => {
-                                    let slen = data.len();
-                                    [data, vec![0f32; len - slen]].concat()
-                                }
-                            },
-                            false => data.split_at(len).0.into(),
-                        };
-                        let mut out_b = vec![0.0; in_b.len()];
-                        shifter.shift_pitch(
-                            16,
-                            n.into(),
-                            notes.into(),
-                            &mut in_b
-                                .par_iter()
-                                .map(|sample| sample * ((volume as f32) / 100f32))
-                                .collect::<Vec<f32>>(),
-                            &mut out_b,
-                        );
-                        out_b
-                    }),
+                    Some(
+                        move |len: usize, n: u8, octave: u8, volume: u8| -> Vec<f32> {
+                            let data = data.clone();
+                            let in_b: Vec<f32> = match len > data.len() {
+                                true => match loops {
+                                    true => data
+                                        .repeat((len - data.len()) % data.len())
+                                        .split_at(len)
+                                        .0
+                                        .into(),
+                                    false => {
+                                        let slen = data.len();
+                                        [data, vec![0f32; len - slen]].concat()
+                                    }
+                                },
+                                false => data.split_at(len).0.into(),
+                            };
+                            let mut out_b = vec![0.0; in_b.len()];
+                            shifter.shift_pitch(
+                                16,
+                                n.into(),
+                                notes.into(),
+                                &mut in_b
+                                    .par_iter()
+                                    .map(|sample| sample * ((volume as f32) / 100f32))
+                                    .collect::<Vec<f32>>(),
+                                &mut out_b,
+                            );
+                            out_b
+                        },
+                    ),
                 )
             }
         })
@@ -175,7 +185,7 @@ pub struct Channel {
 
 #[derive(PartialEq, Debug)]
 pub enum MaskAtom {
-    Octave(u8),
+    Octave(NonZeroU8),
     Length(u8),
     Volume(u8),
     Note(u8),
@@ -370,7 +380,10 @@ mod tests {
     }
     #[test]
     pub fn octave_parser() {
-        assert_eq!(("iueg", MaskAtom::Octave(4)), octave()("@4iueg").unwrap());
+        assert_eq!(
+            ("iueg", MaskAtom::Octave(NonZeroU8::new(4).unwrap())),
+            octave()("@4iueg").unwrap()
+        );
     }
     #[test]
     pub fn rest_parser() {
@@ -382,7 +395,7 @@ mod tests {
             Mask(
                 12,
                 vec![
-                    MaskAtom::Octave(4),
+                    MaskAtom::Octave(std::num::NonZeroU8::new(4).unwrap()),
                     MaskAtom::Length(4),
                     MaskAtom::Volume(100),
                     MaskAtom::Note(0),
@@ -404,7 +417,7 @@ mod tests {
     pub fn instrument_parser() {
         assert_eq!(
             Instrument::Expression {
-                expr: Expr::from_str("sin(2*pi*n*x)").unwrap(),
+                expr: Expr::from_str("sin(2*pi*f*t)").unwrap(),
                 resets: true
             },
             Instrument::try_from(&object! {
@@ -427,7 +440,7 @@ mod tests {
                 mask: Mask(
                     12,
                     vec![
-                        MaskAtom::Octave(4),
+                        MaskAtom::Octave(std::num::NonZeroU8::new(4).unwrap()),
                         MaskAtom::Length(4),
                         MaskAtom::Volume(100),
                         MaskAtom::Note(0),
