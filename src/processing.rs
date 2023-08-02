@@ -1,6 +1,6 @@
 use crate::backbone::{self, Instrument, MaskAtom};
 use anyhow::Result;
-use rayon::prelude::{IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
+use rayon::prelude::{IntoParallelRefMutIterator, ParallelIterator};
 use std::collections::HashMap;
 
 type Track = HashMap<String, Samples>;
@@ -45,21 +45,16 @@ impl backbone::Album {
                     (
                         name.clone(),
                         track
-                            .par_iter()
-                            .fold(
-                                || Vec::<f32>::new(),
-                                move |acc, (_, samples)| {
-                                    samples
-                                        .iter()
-                                        .enumerate()
-                                        .map(|(i, s)| {
-                                            acc.get(i).unwrap_or(&0f32)
-                                                + (*s / (track.len() as f32))
-                                        })
-                                        .collect()
-                                },
-                            )
-                            .reduce(|| Vec::<f32>::new(), move |a, b| [a, b].concat()),
+                            .iter()
+                            .fold(Vec::<f32>::new(), move |acc, (_, samples)| {
+                                samples
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(i, s)| {
+                                        acc.get(i).unwrap_or(&0f32) + (*s / (track.len() as f32))
+                                    })
+                                    .collect()
+                            }),
                     )
                 })
                 .collect::<HashMap<String, Samples>>(),
@@ -90,7 +85,7 @@ impl backbone::Channel {
             } => false,
             Instrument::Expression { expr: _, resets: _ } => true,
         };
-        let gensamples = self.instrument.gen(self.mask.0)?;
+        let gensamples = self.instrument.gen(self.mask.0, self.tuning)?;
         match expr {
             true => {
                 let gen = gensamples.0.unwrap();

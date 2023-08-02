@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.71"
+audio-processor-analysis = "2.1.0"
 clap = { version = "4.3.10", features = ["derive"] }
 derive-new = "0.5.9"
 dirs = "5.0.1"
@@ -19,3 +20,4 @@ rodio = "0.17.1"
 rubato = "0.14.1"
 rustfft = "6.1.0"
 serde_valid = "0.16.2"
+spectrum-analyzer = "1.4.0"

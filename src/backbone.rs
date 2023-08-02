@@ -1,4 +1,5 @@
 use anyhow::{Context, Error, Ok, Result};
+use audio_processor_analysis::window_functions::{hann, make_hann_vec};
 use derive_new::new;
 use json::JsonValue;
 use meval::Expr;
@@ -6,8 +7,9 @@ use nom::branch::alt;
 use nom::character::complete::{char, digit1, space0};
 use nom::multi::many0;
 use nom::{character::complete::one_of, combinator::map_res, sequence::preceded, IResult};
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+use rayon::prelude::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use rodio::{Decoder, Source};
+use spectrum_analyzer::{samples_fft_to_spectrum, FrequencyLimit};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fs::File;
@@ -85,6 +87,7 @@ impl<'a> Instrument {
     pub fn gen(
         &'a self,
         notes: u8,
+        tuning: f32,
     ) -> Result<(
         Option<impl Fn(usize, u8, u8, u8) -> Vec<f32>>,
         Option<impl FnMut(usize, u8, u8, u8) -> Vec<f32> + 'a>,
@@ -99,7 +102,7 @@ impl<'a> Instrument {
                                 .map(|i| {
                                     (func(
                                         (i as f64) / (SAMPLE_RATE as f64),
-                                        110f64
+                                        (tuning as f64 / 16f64)
                                             * 2.0_f64.powf(
                                                 ((notes * octave + n) as f64) / (notes as f64),
                                             ),
@@ -118,6 +121,24 @@ impl<'a> Instrument {
                 resets,
             } => {
                 let mut shifter = PitchShifter::new(50, SAMPLE_RATE as usize);
+                let sample_tuning = samples_fft_to_spectrum(
+                    &{
+                        let mut data = data
+                            .par_iter()
+                            .zip(make_hann_vec::<f32>(data.len()))
+                            .map(|(a, b)| a * b)
+                            .collect::<Vec<f32>>();
+                        data.truncate(2usize.pow(((data.len() as f64).ln() / 2f64.ln()) as u32));
+                        data
+                    },
+                    SAMPLE_RATE,
+                    FrequencyLimit::Range(100f32, 1_000f32),
+                    None,
+                )
+                .unwrap()
+                .max()
+                .0
+                .val();
                 (
                     None,
                     Some(
@@ -137,11 +158,12 @@ impl<'a> Instrument {
                                 },
                                 false => data.split_at(len).0.into(),
                             };
+                            // return in_b;
                             let mut out_b = vec![0.0; in_b.len()];
                             shifter.shift_pitch(
                                 16,
-                                n.into(),
-                                notes.into(),
+                                sample_tuning
+                                    - (tuning * 2.0_f32.powf((n as f32) / (notes as f32))),
                                 &mut in_b
                                     .par_iter()
                                     .map(|sample| sample * ((volume as f32) / 100f32))
@@ -179,7 +201,7 @@ impl Debug for Instrument {
 #[derive(PartialEq, Debug, new)]
 pub struct Channel {
     pub instrument: Instrument,
-    pub tuning: u16,
+    pub tuning: f32,
     pub mask: Mask,
 }
 
@@ -285,7 +307,7 @@ impl TryFrom<&JsonValue> for Channel {
         Ok(Channel {
             instrument: (&value["instrument"]).try_into()?,
             tuning: value["tuning"]
-                .as_u16()
+                .as_f32()
                 .context(err_field("tuning", "unsigned 16-bit integer"))?,
             mask: Mask::try_from(value)?,
         })
@@ -436,7 +458,7 @@ mod tests {
                     expr: Expr::from_str("sin(2*pi*n*x)").unwrap(),
                     resets: true
                 },
-                tuning: 442,
+                tuning: 442f32,
                 mask: Mask(
                     12,
                     vec![

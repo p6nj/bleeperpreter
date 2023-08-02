@@ -99,7 +99,7 @@ impl PitchShifter {
     /// process, but the better the results. I put `16` in the
     /// `shift-wav` binary.
     ///
-    /// `shift` is how many semitones to apply to the buffer.
+    /// `shift` the shift in Hz to apply to the buffer.
     /// It is signed: a negative value will lower the tone and
     /// vice-versa.
     ///
@@ -110,12 +110,10 @@ impl PitchShifter {
     pub fn shift_pitch(
         &mut self,
         over_sampling: usize,
-        shift: SampleReal,
-        notes: SampleReal,
+        shift: f32,
         in_b: &[SampleReal],
         out_b: &mut [SampleReal],
     ) {
-        let shift = 2.0_f32.powf(shift / notes);
         let fs_real = self.frame_size as SampleReal;
         let half_frame_size = (self.frame_size / 2) + 1;
 
