@@ -1,5 +1,5 @@
 use anyhow::{Context, Error, Ok, Result};
-use audio_processor_analysis::window_functions::{hann, make_hann_vec};
+use audio_processor_analysis::window_functions::make_hann_vec;
 use derive_new::new;
 use json::JsonValue;
 use meval::Expr;
@@ -23,24 +23,24 @@ use resampling::resample;
 mod pitch_shift;
 use pitch_shift::PitchShifter;
 
-pub const SAMPLE_RATE: u32 = 48000;
+pub(crate) const SAMPLE_RATE: u32 = 48000;
 
 #[derive(PartialEq, Debug)]
-pub struct Root(pub HashMap<String, Album>);
+pub(crate) struct Root(pub(crate) HashMap<String, Album>);
 
 #[derive(new, PartialEq, Debug)]
-pub struct Album {
-    pub artist: String,
-    pub tracks: HashMap<String, Track>,
+pub(crate) struct Album {
+    pub(crate) artist: String,
+    pub(crate) tracks: HashMap<String, Track>,
 }
 
 #[derive(new, PartialEq, Debug)]
-pub struct Track {
-    pub bpm: u16,
-    pub channels: HashMap<String, Channel>,
+pub(crate) struct Track {
+    pub(crate) bpm: u16,
+    pub(crate) channels: HashMap<String, Channel>,
 }
 
-pub enum Instrument {
+pub(crate) enum Instrument {
     Sample {
         /// this vector of samples is already set to the project sample rate.
         data: Vec<f32>,
@@ -84,7 +84,7 @@ impl PartialEq for Instrument {
 }
 
 impl<'a> Instrument {
-    pub fn gen(
+    pub(crate) fn gen(
         &'a self,
         notes: u8,
         tuning: f32,
@@ -120,7 +120,7 @@ impl<'a> Instrument {
                 loops,
                 resets,
             } => {
-                let mut shifter = PitchShifter::new(50, SAMPLE_RATE as usize);
+                let shifter = PitchShifter::new(50, SAMPLE_RATE as usize);
                 let sample_tuning = samples_fft_to_spectrum(
                     &{
                         let mut data = data
@@ -143,22 +143,13 @@ impl<'a> Instrument {
                     None,
                     Some(
                         move |len: usize, n: u8, octave: u8, volume: u8| -> Vec<f32> {
-                            let data = data.clone();
-                            let in_b: Vec<f32> = match len > data.len() {
-                                true => match loops {
-                                    true => data
-                                        .repeat((len - data.len()) % data.len())
-                                        .split_at(len)
-                                        .0
-                                        .into(),
-                                    false => {
-                                        let slen = data.len();
-                                        [data, vec![0f32; len - slen]].concat()
-                                    }
-                                },
-                                false => data.split_at(len).0.into(),
-                            };
-                            // return in_b;
+                            let mut in_b = data.clone();
+                            let mut iter = data.iter().cycle();
+                            match *loops {
+                                true => in_b.resize_with(len, move || *iter.next().unwrap()),
+                                false => in_b.resize_with(len, || 0f32),
+                            }
+                            return in_b;
                             let mut out_b = vec![0.0; in_b.len()];
                             shifter.shift_pitch(
                                 16,
@@ -199,14 +190,14 @@ impl Debug for Instrument {
 }
 
 #[derive(PartialEq, Debug, new)]
-pub struct Channel {
-    pub instrument: Instrument,
-    pub tuning: f32,
-    pub mask: Mask,
+pub(crate) struct Channel {
+    pub(crate) instrument: Instrument,
+    pub(crate) tuning: f32,
+    pub(crate) mask: Mask,
 }
 
 #[derive(PartialEq, Debug)]
-pub enum MaskAtom {
+pub(crate) enum MaskAtom {
     Octave(NonZeroU8),
     Length(u8),
     Volume(u8),
@@ -215,7 +206,7 @@ pub enum MaskAtom {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Mask(pub u8, pub Vec<MaskAtom>);
+pub(crate) struct Mask(pub(crate) u8, pub(crate) Vec<MaskAtom>);
 
 fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
     map_res(one_of(notes), move |c| {
@@ -276,9 +267,9 @@ impl TryFrom<&JsonValue> for Instrument {
                             decoder
                                 .convert_samples::<f32>()
                                 .enumerate()
-                                .filter(|(i, _)| i % (channels as usize) == 0)
-                                .map(move |(_, e)| e)
-                                .collect(),
+                                .filter(move |(i, _)| i % (channels as usize) == 0)
+                                .unzip::<usize, f32, Vec<usize>, Vec<f32>>()
+                                .1,
                             from_sr.into(),
                             SAMPLE_RATE as f64,
                         )?
@@ -393,26 +384,26 @@ mod tests {
 
     use super::*;
     #[test]
-    pub fn note_parser() {
+    pub(crate) fn note_parser() {
         assert_eq!(("iueg", MaskAtom::Note(2)), note("abcde")("ciueg").unwrap());
     }
     #[test]
-    pub fn length_parser() {
+    pub(crate) fn length_parser() {
         assert_eq!(("iueg", MaskAtom::Length(16)), length()("$16iueg").unwrap());
     }
     #[test]
-    pub fn octave_parser() {
+    pub(crate) fn octave_parser() {
         assert_eq!(
             ("iueg", MaskAtom::Octave(NonZeroU8::new(4).unwrap())),
             octave()("@4iueg").unwrap()
         );
     }
     #[test]
-    pub fn rest_parser() {
+    pub(crate) fn rest_parser() {
         assert_eq!(("iueg", MaskAtom::Rest), rest()(".iueg").unwrap());
     }
     #[test]
-    pub fn mask_parser() {
+    pub(crate) fn mask_parser() {
         assert_eq!(
             Mask(
                 12,
@@ -436,7 +427,7 @@ mod tests {
         );
     }
     #[test]
-    pub fn instrument_parser() {
+    pub(crate) fn instrument_parser() {
         assert_eq!(
             Instrument::Expression {
                 expr: Expr::from_str("sin(2*pi*f*t)").unwrap(),
@@ -451,7 +442,7 @@ mod tests {
         );
     }
     #[test]
-    pub fn channel_parser() {
+    pub(crate) fn channel_parser() {
         assert_eq!(
             Channel {
                 instrument: Instrument::Expression {
@@ -486,7 +477,7 @@ mod tests {
         );
     }
     #[test]
-    pub fn root_parser() {
+    pub(crate) fn root_parser() {
         assert_eq!(
             Root(HashMap::from([(
                 "My First Album".to_string(),

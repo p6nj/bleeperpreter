@@ -2,7 +2,7 @@ use crate::{backbone::SAMPLE_RATE, processing::MixedRoot};
 use anyhow::Result;
 use rodio::{buffer::SamplesBuffer, OutputStream, Source};
 
-pub fn play(mix: &MixedRoot) -> Result<()> {
+pub(crate) fn play(mix: &MixedRoot) -> Result<()> {
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     mix.iter()
         .try_for_each(|(album, album_data)| -> Result<()> {

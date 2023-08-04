@@ -8,7 +8,7 @@ use anyhow::{Context, Ok, Result};
 use dirs::home_dir;
 use hound::{SampleFormat, WavSpec};
 
-pub fn save(mix: &MixedRoot) -> Result<()> {
+pub(crate) fn save(mix: &MixedRoot) -> Result<()> {
     let dir = setup()?;
     let spec = WavSpec {
         channels: 1,

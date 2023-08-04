@@ -8,7 +8,7 @@ type Album = (String, HashMap<String, Track>);
 type Samples = Vec<f32>;
 
 type MixedAlbum = (String, HashMap<String, Samples>);
-pub type MixedRoot = HashMap<String, MixedAlbum>;
+pub(crate) type MixedRoot = HashMap<String, MixedAlbum>;
 
 impl backbone::Track {
     fn process(&mut self) -> Result<Track> {
@@ -121,7 +121,7 @@ impl backbone::Channel {
 }
 
 impl backbone::Root {
-    pub fn mix(mut self) -> Result<MixedRoot> {
+    pub(crate) fn mix(mut self) -> Result<MixedRoot> {
         Ok(self
             .0
             .iter_mut()

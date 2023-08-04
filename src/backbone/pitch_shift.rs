@@ -12,7 +12,7 @@ type SampleReal = f32;
 const COMPLEX_ZERO: Complex<SampleReal> = Complex::new(0.0, 0.0);
 
 /// See [`PitchShifter::new`] & [`PitchShifter::shift_pitch`]
-pub struct PitchShifter {
+pub(crate) struct PitchShifter {
     forward_fft: RealToComplexEven<SampleReal>,
     inverse_fft: ComplexToRealEven<SampleReal>,
     ffft_scratch_len: usize,
@@ -48,7 +48,7 @@ impl PitchShifter {
     /// rate of the buffer(s) you will provide to
     /// [`PitchShifter::shift_pitch`], which is how many values
     /// correspond to one second of audio in the buffer.
-    pub fn new(window_duration_ms: usize, sample_rate: usize) -> Self {
+    pub(crate) fn new(window_duration_ms: usize, sample_rate: usize) -> Self {
         let mut frame_size = sample_rate * window_duration_ms / 1000;
         frame_size += frame_size % 2;
         let fs_real = frame_size as SampleReal;
@@ -107,7 +107,7 @@ impl PitchShifter {
     /// an output buffer of the same length in `out_b`.
     ///
     /// Note: It's actually not magic, sadly.
-    pub fn shift_pitch(
+    pub(crate) fn shift_pitch(
         &mut self,
         over_sampling: usize,
         shift: f32,

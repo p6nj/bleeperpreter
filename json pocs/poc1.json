@@ -26,7 +26,7 @@
                         },
                         "notes": "aAbcCdDefFgG",
                         "tuning": 442,
-                        "mask": "@4$4!100 a.cd"
+                        "mask": "@4$4!0 a.cd"
                     }
                 }
             }
