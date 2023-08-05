@@ -10,10 +10,19 @@ pub(crate) fn resample(source: Vec<f32>, from: f64, to: f64) -> Result<Vec<f32>>
         oversampling_factor: 256,
         window: WindowFunction::BlackmanHarris2,
     };
-    let mut resampler = SincFixedIn::<f32>::new(to / from, 2.0, params, 1024, 1)?;
+    let mut resampler = SincFixedIn::<f32>::new(to / from, 2.0, params, 1124, 1)?;
 
     let wave_in = source;
-    let mut wave_out = [vec![0f32; wave_in.len()]];
-    resampler.process_into_buffer(&[wave_in], &mut wave_out, None)?;
-    Ok(wave_out.get(0).unwrap().to_owned())
+    const BUFSIZE: usize = 1024;
+    Ok(wave_in
+        .chunks_exact(BUFSIZE)
+        .map(|win| -> Result<[f32; BUFSIZE]> {
+            let mut wout = [[0f32; BUFSIZE]];
+            resampler
+                .process_into_buffer(&[win], &mut wout, None)
+                .unwrap();
+            Ok(wout[0].to_owned())
+        })
+        .collect::<Result<Vec<[f32; BUFSIZE]>>>()?
+        .concat())
 }
