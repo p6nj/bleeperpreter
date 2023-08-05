@@ -63,10 +63,9 @@ impl PitchShifter {
         let ifft_scratch_len = inverse_fft.get_scratch_len();
         let scratch_len = ffft_scratch_len.max(ifft_scratch_len);
 
-        let mut windowing = vec![0.0; frame_size];
-        for k in 0..frame_size {
-            windowing[k] = -0.5 * (TAU * (k as SampleReal) / fs_real).cos() + 0.5;
-        }
+        let windowing = (0..frame_size)
+            .map(move |k| -0.5 * (TAU * (k as SampleReal) / fs_real).cos() + 0.5)
+            .collect();
 
         Self {
             forward_fft,

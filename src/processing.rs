@@ -12,13 +12,12 @@ pub(crate) type MixedRoot = HashMap<String, MixedAlbum>;
 
 impl backbone::Track {
     fn process(&mut self) -> Result<Track> {
-        Ok(self
-            .channels
+        self.channels
             .par_iter_mut()
             .map(|(name, channel)| -> Result<(String, Samples)> {
                 Ok((name.clone(), channel.process(&self.bpm)?))
             })
-            .collect::<Result<Track>>()?)
+            .collect::<Result<Track>>()
     }
 }
 
@@ -122,12 +121,11 @@ impl backbone::Channel {
 
 impl backbone::Root {
     pub(crate) fn mix(mut self) -> Result<MixedRoot> {
-        Ok(self
-            .0
+        self.0
             .iter_mut()
             .map(|(name, album)| -> Result<(String, MixedAlbum)> {
                 Ok((name.clone(), album.mix()?))
             })
-            .collect::<Result<MixedRoot>>()?)
+            .collect::<Result<MixedRoot>>()
     }
 }

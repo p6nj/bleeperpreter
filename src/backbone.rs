@@ -155,7 +155,7 @@ impl<'a> Instrument {
                                 16,
                                 sample_tuning
                                     - (tuning * 2.0_f32.powf((n as f32) / (notes as f32))),
-                                &mut in_b
+                                &in_b
                                     .par_iter()
                                     .map(|sample| sample * ((volume as f32) / 100f32))
                                     .collect::<Vec<f32>>(),

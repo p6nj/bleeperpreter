@@ -24,7 +24,7 @@ pub(crate) fn save(mix: &MixedRoot) -> Result<()> {
                 .iter()
                 .try_for_each(|(track, track_data)| -> Result<()> {
                     let filename = album_dir.join(track).with_extension("wav");
-                    let mut writer = hound::WavWriter::create(&filename, spec)?;
+                    let mut writer = hound::WavWriter::create(filename, spec)?;
                     track_data
                         .iter()
                         .map(|sample| (sample * (i16::MAX as f32)) as i16)
