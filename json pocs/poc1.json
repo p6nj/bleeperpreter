@@ -7,26 +7,21 @@
                 "channels": {
                     "piano": {
                         "instrument": {
-                            "type": "sample",
-                            "path": "sound/piano.wav",
-                            "loops": false
+                            "expr": "4*abs(f*t-floor(f*t+1/2))-1",
+                            "resets": false
                         },
-                        "effects": [
-                            "low reverb"
-                        ],
                         "notes": "aAbcCdDefFgG",
                         "tuning": 442,
-                        "mask": "@4$4!0 a.cd"
+                        "mask": "@4$4!100 .a"
                     },
                     "synth": {
                         "instrument": {
-                            "type": "expression",
-                            "expression": "sin(2*pi*f*t)",
+                            "expr": "sin(2*pi*f*t)",
                             "resets": true
                         },
                         "notes": "aAbcCdDefFgG",
                         "tuning": 442,
-                        "mask": "@4$4!0 a.cd"
+                        "mask": "@4$4!100 a.cd"
                     }
                 }
             }

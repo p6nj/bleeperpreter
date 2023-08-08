@@ -26,3 +26,9 @@ fn main() -> Result<()> {
     save(&mix)?;
     Ok(())
 }
+
+/* Help for expressions:
+ * https://thewolfsound.com/sine-saw-square-triangle-pulse-basic-waveforms-in-synthesis/
+ * https://github.com/rekka/meval-rs#supported-expressions
+ * https://www.desmos.com/calculator
+ */
