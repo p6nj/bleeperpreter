@@ -76,44 +76,15 @@ impl backbone::Channel {
         };
         let mut real_length = genlength(4)?;
 
-        let expr = match &self.instrument {
-            Instrument::Sample {
-                data: _,
-                loops: _,
-                resets: _,
-            } => false,
-            Instrument::Expression { expr: _, resets: _ } => true,
-        };
-        let gensamples = self.instrument.gen(self.mask.0, self.tuning)?;
-        match expr {
-            true => {
-                let gen = gensamples.0.unwrap();
-                for a in self.mask.1.iter() {
-                    match *a {
-                        MaskAtom::Octave(o) => octave = u8::from(o) - 1,
-                        MaskAtom::Length(l) => real_length = genlength(l)?,
-                        MaskAtom::Volume(v) => volume = v,
-                        MaskAtom::Note(n) => {
-                            result.append(&mut gen(real_length, n, octave, volume))
-                        }
-                        MaskAtom::Rest => result.append(&mut vec![0f32; real_length]),
-                    };
-                }
-            }
-            false => {
-                let mut gen = gensamples.1.unwrap();
-                for a in self.mask.1.iter() {
-                    match *a {
-                        MaskAtom::Octave(o) => octave = u8::from(o) - 1,
-                        MaskAtom::Length(l) => real_length = genlength(l)?,
-                        MaskAtom::Volume(v) => volume = v,
-                        MaskAtom::Note(n) => {
-                            result.append(&mut gen(real_length, n, octave, volume))
-                        }
-                        MaskAtom::Rest => result.append(&mut vec![0f32; real_length]),
-                    };
-                }
-            }
+        let gen = self.instrument.gen(self.mask.0, self.tuning)?;
+        for a in self.mask.1.iter() {
+            match *a {
+                MaskAtom::Octave(o) => octave = u8::from(o) - 1,
+                MaskAtom::Length(l) => real_length = genlength(l)?,
+                MaskAtom::Volume(v) => volume = v,
+                MaskAtom::Note(n) => result.append(&mut gen(real_length, n, octave, volume)),
+                MaskAtom::Rest => result.append(&mut vec![0f32; real_length]),
+            };
         }
         Ok(result)
     }

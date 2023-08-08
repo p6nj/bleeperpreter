@@ -40,150 +40,35 @@ pub(crate) struct Track {
     pub(crate) channels: HashMap<String, Channel>,
 }
 
+#[derive(PartialEq, Debug)]
 pub(crate) enum Instrument {
-    Sample {
-        /// this vector of samples is already set to the project sample rate.
-        data: Vec<f32>,
-        loops: bool,
-        resets: bool,
-    },
-    Expression {
-        expr: Expr,
-        resets: bool,
-    },
+    Expression { expr: Expr, resets: bool },
 }
 
-impl PartialEq for Instrument {
-    fn eq(&self, other: &Self) -> bool {
-        match self {
-            Instrument::Sample {
-                data: _,
-                loops,
-                resets,
-            } => match other {
-                Instrument::Sample {
-                    data: _,
-                    loops: other_loops,
-                    resets: other_resets,
-                } => loops == other_loops && resets == other_resets,
-                Instrument::Expression { expr: _, resets: _ } => false,
-            },
-            Instrument::Expression { expr, resets } => match other {
-                Instrument::Sample {
-                    data: _,
-                    loops: _,
-                    resets: _,
-                } => false,
-                Instrument::Expression {
-                    expr: other_expr,
-                    resets: other_resets,
-                } => expr == other_expr && resets == other_resets,
-            },
-        }
-    }
-}
-
-impl<'a> Instrument {
+impl Instrument {
     pub(crate) fn gen(
-        &'a self,
+        &self,
         notes: u8,
         tuning: f32,
-    ) -> Result<(
-        Option<impl Fn(usize, u8, u8, u8) -> Vec<f32>>,
-        Option<impl FnMut(usize, u8, u8, u8) -> Vec<f32> + 'a>,
-    )> {
-        Ok(match self {
+    ) -> Result<impl Fn(usize, u8, u8, u8) -> Vec<f32>> {
+        match self {
             Self::Expression { expr, resets } => {
                 let func = expr.clone().bind2("t", "f")?;
-                (
-                    Some(
-                        move |len: usize, n: u8, octave: u8, volume: u8| -> Vec<f32> {
-                            (1..len)
-                                .map(|i| {
-                                    (func(
-                                        (i as f64) / (SAMPLE_RATE as f64),
-                                        (tuning as f64 / 16f64)
-                                            * 2.0_f64.powf(
-                                                ((notes * octave + n) as f64) / (notes as f64),
-                                            ),
-                                    ) * ((volume as f64) / 100f64))
-                                        as f32
-                                })
-                                .collect()
-                        },
-                    ),
-                    None,
-                )
-            }
-            Self::Sample {
-                data,
-                loops,
-                resets,
-            } => {
-                let shifter = PitchShifter::new(50, SAMPLE_RATE as usize);
-                let sample_tuning = samples_fft_to_spectrum(
-                    &{
-                        let mut data = data
-                            .par_iter()
-                            .zip(make_hann_vec::<f32>(data.len()))
-                            .map(|(a, b)| a * b)
-                            .collect::<Vec<f32>>();
-                        data.truncate(2usize.pow(((data.len() as f64).ln() / 2f64.ln()) as u32));
-                        data
+                Ok(
+                    move |len: usize, n: u8, octave: u8, volume: u8| -> Vec<f32> {
+                        (1..len)
+                            .map(|i| {
+                                (func(
+                                    (i as f64) / (SAMPLE_RATE as f64),
+                                    (tuning as f64 / 16f64)
+                                        * 2.0_f64
+                                            .powf(((notes * octave + n) as f64) / (notes as f64)),
+                                ) * ((volume as f64) / 100f64))
+                                    as f32
+                            })
+                            .collect()
                     },
-                    SAMPLE_RATE,
-                    FrequencyLimit::Range(100f32, 1_000f32),
-                    None,
                 )
-                .unwrap()
-                .max()
-                .0
-                .val();
-                (
-                    None,
-                    Some(
-                        move |len: usize, n: u8, octave: u8, volume: u8| -> Vec<f32> {
-                            let mut in_b = data.clone();
-                            let mut iter = data.iter().cycle();
-                            match *loops {
-                                true => in_b.resize_with(len, move || *iter.next().unwrap()),
-                                false => in_b.resize_with(len, || 0f32),
-                            }
-                            return in_b;
-                            let mut out_b = vec![0.0; in_b.len()];
-                            shifter.shift_pitch(
-                                16,
-                                sample_tuning
-                                    - (tuning * 2.0_f32.powf((n as f32) / (notes as f32))),
-                                &in_b
-                                    .par_iter()
-                                    .map(|sample| sample * ((volume as f32) / 100f32))
-                                    .collect::<Vec<f32>>(),
-                                &mut out_b,
-                            );
-                            out_b
-                        },
-                    ),
-                )
-            }
-        })
-    }
-}
-
-impl Debug for Instrument {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Instrument::Sample {
-                data: _,
-                loops,
-                resets,
-            } => write!(
-                f,
-                "Sample {{ data: ({}), loops: {:?}, resets: {:?} }}",
-                "can't display", loops, resets
-            ),
-            Instrument::Expression { expr, resets } => {
-                write!(f, "Expression {{ expr: {:?}, resets: {:?} }}", expr, resets)
             }
         }
     }
@@ -249,42 +134,14 @@ fn err_field(field: &str, r#type: &str) -> String {
 impl TryFrom<&JsonValue> for Instrument {
     type Error = Error;
     fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
-        match value["type"]
-            .as_str()
-            .context(err_field("type", "string"))?
-        {
-            "sample" => Ok(Instrument::Sample {
-                data: {
-                    let decoder = Decoder::new(BufReader::new(File::open(
-                        value["path"]
-                            .as_str()
-                            .context(err_field("path", "string"))?,
-                    )?))?;
-                    {
-                        let from_sr = decoder.sample_rate();
-                        let channels = decoder.channels();
-                        resample(
-                            decoder
-                                .convert_samples::<f32>()
-                                .enumerate()
-                                .filter(move |(i, _)| i % (channels as usize) == 0)
-                                .unzip::<usize, f32, Vec<usize>, Vec<f32>>()
-                                .1,
-                            from_sr.into(),
-                            SAMPLE_RATE as f64,
-                        )?
-                    }
-                },
-                loops: value["loops"].as_bool().unwrap_or(false),
-                resets: value["resets"].as_bool().unwrap_or(false),
-            }),
-            "expression" => Ok(Instrument::Expression {
+        match value.entries().next().context("empty instrument")?.0 {
+            "expr" => Ok(Instrument::Expression {
                 expr: Expr::from_str(
-                    value["expression"]
+                    value["expr"]
                         .as_str()
-                        .context(err_field("expression", "string"))?,
+                        .context(err_field("expr", "string"))?,
                 )
-                .context("can't parse expression")?,
+                .context("invalid expression")?,
                 resets: value["resets"].as_bool().unwrap_or(false),
             }),
             _ => Err(Error::msg("unknown instrument type")),
@@ -434,8 +291,7 @@ mod tests {
                 resets: true
             },
             Instrument::try_from(&object! {
-                "type": "expression",
-                "expression": "sin(x)",
+                "expr": "sin(2*pi*f*t)",
                 "resets": true
             })
             .unwrap()
@@ -465,8 +321,7 @@ mod tests {
             },
             Channel::try_from(&object! {
                 "instrument": {
-                    "type": "expression",
-                    "expression": "sin(x)",
+                    "expr": "sin(2*pi*n*x)",
                     "resets": true
                 },
                 "notes": "aAbcCdDefFgG",
@@ -489,21 +344,16 @@ mod tests {
                             "channels": {
                                 "piano": {
                                     "instrument": {
-                                        "type": "sample",
-                                        "path": "sound/piano.data",
-                                        "loops": false
+                                        "expr": "4*abs(f*t-floor(f*t+1/2))-1",
+                                        "resets": true
                                     },
-                                    "effects": [
-                                        "low reverb"
-                                    ],
                                     "notes": "aAbcCdDefFgG",
                                     "tuning": 442,
-                                    "mask": "@4$4!100 a.cd"
+                                    "mask": "@4$4!100 .a"
                                 },
                                 "synth": {
                                     "instrument": {
-                                        "type": "expression",
-                                        "expression": "sin(x)",
+                                        "expr": "sin(2*pi*f*t)",
                                         "resets": true
                                     },
                                     "notes": "aAbcCdDefFgG",
@@ -525,21 +375,16 @@ mod tests {
                             "channels": {
                                 "piano": {
                                     "instrument": {
-                                        "type": "sample",
-                                        "path": "sound/piano.data",
-                                        "loops": false
+                                        "expr": "4*abs(f*t-floor(f*t+1/2))-1",
+                                        "resets": true
                                     },
-                                    "effects": [
-                                        "low reverb"
-                                    ],
                                     "notes": "aAbcCdDefFgG",
                                     "tuning": 442,
-                                    "mask": "@4$4!100 a.cd"
+                                    "mask": "@4$4!100 .a"
                                 },
                                 "synth": {
                                     "instrument": {
-                                        "type": "expression",
-                                        "expression": "sin(x)",
+                                        "expr": "sin(2*pi*f*t)",
                                         "resets": true
                                     },
                                     "notes": "aAbcCdDefFgG",
