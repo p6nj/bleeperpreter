@@ -42,7 +42,7 @@ pub(crate) struct Track {
 
 #[derive(PartialEq, Debug)]
 pub(crate) enum Instrument {
-    Expression { expr: Expr, resets: bool },
+    Expression { expr: Expr },
 }
 
 impl Instrument {
@@ -52,7 +52,7 @@ impl Instrument {
         tuning: f32,
     ) -> Result<impl Fn(usize, u8, u8, u8) -> Vec<f32>> {
         match self {
-            Self::Expression { expr, resets } => {
+            Self::Expression { expr } => {
                 let func = expr.clone().bind2("t", "f")?;
                 Ok(
                     move |len: usize, n: u8, octave: u8, volume: u8| -> Vec<f32> {
@@ -142,7 +142,6 @@ impl TryFrom<&JsonValue> for Instrument {
                         .context(err_field("expr", "string"))?,
                 )
                 .context("invalid expression")?,
-                resets: value["resets"].as_bool().unwrap_or(false),
             }),
             _ => Err(Error::msg("unknown instrument type")),
         }
@@ -287,12 +286,10 @@ mod tests {
     pub(crate) fn instrument_parser() {
         assert_eq!(
             Instrument::Expression {
-                expr: Expr::from_str("sin(2*pi*f*t)").unwrap(),
-                resets: true
+                expr: Expr::from_str("sin(2*pi*f*t)").unwrap()
             },
             Instrument::try_from(&object! {
-                "expr": "sin(2*pi*f*t)",
-                "resets": true
+                "expr": "sin(2*pi*f*t)"
             })
             .unwrap()
         );
@@ -302,8 +299,7 @@ mod tests {
         assert_eq!(
             Channel {
                 instrument: Instrument::Expression {
-                    expr: Expr::from_str("sin(2*pi*n*x)").unwrap(),
-                    resets: true
+                    expr: Expr::from_str("sin(2*pi*n*x)").unwrap()
                 },
                 tuning: 442f32,
                 mask: Mask(
@@ -321,8 +317,7 @@ mod tests {
             },
             Channel::try_from(&object! {
                 "instrument": {
-                    "expr": "sin(2*pi*n*x)",
-                    "resets": true
+                    "expr": "sin(2*pi*n*x)"
                 },
                 "notes": "aAbcCdDefFgG",
                 "tuning": 442,

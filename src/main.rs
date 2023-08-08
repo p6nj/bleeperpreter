@@ -21,7 +21,7 @@ fn main() -> Result<()> {
     // let args = Arguments::parse();
     // jsons::parse(args.json_path).context("error parsing json file")?;
     // jsons::parse(Path::new("json pocs").join("poc1.json"))?
-    let parsed: Root = jsons::parse(Path::new("json pocs").join("poc1.json"))?.try_into()?;
+    let parsed: Root = jsons::parse(Path::new("json pocs").join("poc.json"))?.try_into()?;
     let mix = parsed.mix()?;
     save(&mix)?;
     Ok(())
