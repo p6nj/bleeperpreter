@@ -3,24 +3,23 @@
         "artist": "me",
         "tracks": {
             "My First Song": {
-                "BPM": 10620,
+                "BPM": 60,
                 "channels": {
                     "piano": {
                         "instrument": {
-                            "expr": "4*abs(f*t-floor(f*t+1/2))-1",
-                            "fmod": "f+5*sin(2*pi*10*t)"
-                        },
-                        "notes": "aAbcCdDefFgG",
-                        "tuning": 442,
-                        "mask": "@4$6!100 a"
-                    },
-                    "synth": {
-                        "instrument": {
-                            "expr": "sin(2*pi*f*t)"
+                            "expr": "4*abs(f*t-floor(f*t+1/2))-1"
                         },
                         "notes": "aAbcCdDefFgG",
                         "tuning": 442,
                         "mask": "@4$6!100 ."
+                    },
+                    "synth": {
+                        "instrument": {
+                            "expr": "sin((2*pi*f*t)-cos(2*pi*8*t))"
+                        },
+                        "notes": "aAbcCdDefFgG",
+                        "tuning": 442,
+                        "mask": "@4$6!100 a"
                     }
                 }
             }

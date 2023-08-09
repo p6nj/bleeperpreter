@@ -1,7 +1,7 @@
 use anyhow::{Context, Error, Ok, Result};
 use audio_processor_analysis::window_functions::make_hann_vec;
 use derive_new::new;
-use json::JsonValue;
+use json::{object, JsonValue};
 use meval::Expr;
 use nom::branch::alt;
 use nom::character::complete::{char, digit1, space0};
@@ -57,12 +57,12 @@ impl Instrument {
                 let fmod = fmod.clone().bind2("t", "f")?;
                 Ok(
                     move |len: usize, n: u8, octave: u8, volume: u8| -> Vec<f32> {
+                        let f = (tuning as f64 / 16f64)
+                            * 2.0_f64.powf(((notes * octave + n) as f64) / (notes as f64));
                         (1..len)
                             .map(|i| {
                                 let t = (i as f64) / (SAMPLE_RATE as f64);
-                                let f = (tuning as f64 / 16f64)
-                                    * 2.0_f64.powf(((notes * octave + n) as f64) / (notes as f64));
-                                let f = fmod(t, f);
+                                let f = fmod(t, f); // this is fine!
                                 (func(t, f) * ((volume as f64) / 100f64)) as f32
                             })
                             .collect()
@@ -233,36 +233,72 @@ impl TryFrom<JsonValue> for Root {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use std::str::FromStr;
-
-    use json::object;
-
-    use super::*;
-    #[test]
-    pub(crate) fn note_parser() {
-        assert_eq!(("iueg", MaskAtom::Note(2)), note("abcde")("ciueg").unwrap());
-    }
-    #[test]
-    pub(crate) fn length_parser() {
-        assert_eq!(("iueg", MaskAtom::Length(16)), length()("$16iueg").unwrap());
-    }
-    #[test]
-    pub(crate) fn octave_parser() {
-        assert_eq!(
-            ("iueg", MaskAtom::Octave(NonZeroU8::new(4).unwrap())),
-            octave()("@4iueg").unwrap()
-        );
-    }
-    #[test]
-    pub(crate) fn rest_parser() {
-        assert_eq!(("iueg", MaskAtom::Rest), rest()(".iueg").unwrap());
-    }
-    #[test]
-    pub(crate) fn mask_parser() {
-        assert_eq!(
-            Mask(
+#[test]
+fn note_parser() {
+    assert_eq!(("iueg", MaskAtom::Note(2)), note("abcde")("ciueg").unwrap());
+}
+#[test]
+fn length_parser() {
+    assert_eq!(("iueg", MaskAtom::Length(16)), length()("$16iueg").unwrap());
+}
+#[test]
+fn octave_parser() {
+    assert_eq!(
+        ("iueg", MaskAtom::Octave(NonZeroU8::new(4).unwrap())),
+        octave()("@4iueg").unwrap()
+    );
+}
+#[test]
+fn rest_parser() {
+    assert_eq!(("iueg", MaskAtom::Rest), rest()(".iueg").unwrap());
+}
+#[test]
+fn mask_parser() {
+    assert_eq!(
+        Mask(
+            12,
+            vec![
+                MaskAtom::Octave(std::num::NonZeroU8::new(4).unwrap()),
+                MaskAtom::Length(4),
+                MaskAtom::Volume(100),
+                MaskAtom::Note(0),
+                MaskAtom::Rest,
+                MaskAtom::Note(3),
+                MaskAtom::Note(5)
+            ]
+        ),
+        Mask::try_from(&object! {
+            "instrument": "piano-sample",
+            "notes": "aAbcCdDefFgG",
+            "tuning": 442,
+            "mask": "@4$4!100 a.cd"
+        })
+        .unwrap()
+    );
+}
+#[test]
+fn instrument_parser() {
+    assert_eq!(
+        Instrument::Expression {
+            expr: Expr::from_str("sin(2*pi*f*t)").unwrap(),
+            fmod: Expr::from_str("f").unwrap()
+        },
+        Instrument::try_from(&object! {
+            "expr": "sin(2*pi*f*t)"
+        })
+        .unwrap()
+    );
+}
+#[test]
+fn channel_parser() {
+    assert_eq!(
+        Channel {
+            instrument: Instrument::Expression {
+                expr: Expr::from_str("sin(2*pi*f*x)").unwrap(),
+                fmod: Expr::from_str("f").unwrap()
+            },
+            tuning: 442f32,
+            mask: Mask(
                 12,
                 vec![
                     MaskAtom::Octave(std::num::NonZeroU8::new(4).unwrap()),
@@ -273,128 +309,244 @@ mod tests {
                     MaskAtom::Note(3),
                     MaskAtom::Note(5)
                 ]
-            ),
-            Mask::try_from(&object! {
-                "instrument": "piano-sample",
-                "notes": "aAbcCdDefFgG",
-                "tuning": 442,
-                "mask": "@4$4!100 a.cd"
-            })
-            .unwrap()
-        );
-    }
-    #[test]
-    pub(crate) fn instrument_parser() {
-        assert_eq!(
-            Instrument::Expression {
-                expr: Expr::from_str("sin(2*pi*f*t)").unwrap(),
-                fmod: Expr::from_str("f").unwrap()
+            )
+        },
+        Channel::try_from(&object! {
+            "instrument": {
+                "expr": "sin(2*pi*f*x)"
             },
-            Instrument::try_from(&object! {
-                "expr": "sin(2*pi*f*t)"
-            })
-            .unwrap()
-        );
-    }
-    #[test]
-    pub(crate) fn channel_parser() {
-        assert_eq!(
-            Channel {
-                instrument: Instrument::Expression {
-                    expr: Expr::from_str("sin(2*pi*f*x)").unwrap(),
-                    fmod: Expr::from_str("f").unwrap()
-                },
-                tuning: 442f32,
-                mask: Mask(
-                    12,
-                    vec![
-                        MaskAtom::Octave(std::num::NonZeroU8::new(4).unwrap()),
-                        MaskAtom::Length(4),
-                        MaskAtom::Volume(100),
-                        MaskAtom::Note(0),
-                        MaskAtom::Rest,
-                        MaskAtom::Note(3),
-                        MaskAtom::Note(5)
-                    ]
-                )
-            },
-            Channel::try_from(&object! {
-                "instrument": {
-                    "expr": "sin(2*pi*f*x)"
-                },
-                "notes": "aAbcCdDefFgG",
-                "tuning": 442,
-                "mask": "@4$4!100 a.cd"
-            })
-            .unwrap()
-        );
-    }
-    #[test]
-    pub(crate) fn root_parser() {
-        assert_eq!(
-            Root(HashMap::from([(
-                "My First Album".to_string(),
-                Album::try_from(&object! {
-                    "artist": "me",
-                    "tracks": {
-                        "My First Song": {
-                            "BPM": 60,
-                            "channels": {
-                                "piano": {
-                                    "instrument": {
-                                        "expr": "4*abs(f*t-floor(f*t+1/2))-1",
-                                        "resets": true
-                                    },
-                                    "notes": "aAbcCdDefFgG",
-                                    "tuning": 442,
-                                    "mask": "@4$4!100 .a"
+            "notes": "aAbcCdDefFgG",
+            "tuning": 442,
+            "mask": "@4$4!100 a.cd"
+        })
+        .unwrap()
+    );
+}
+#[test]
+fn root_parser() {
+    assert_eq!(
+        Root(HashMap::from([(
+            "My First Album".to_string(),
+            Album::try_from(&object! {
+                "artist": "me",
+                "tracks": {
+                    "My First Song": {
+                        "BPM": 60,
+                        "channels": {
+                            "piano": {
+                                "instrument": {
+                                    "expr": "4*abs(f*t-floor(f*t+1/2))-1",
+                                    "resets": true
                                 },
-                                "synth": {
-                                    "instrument": {
-                                        "expr": "sin(2*pi*f*t)",
-                                        "resets": true
-                                    },
-                                    "notes": "aAbcCdDefFgG",
-                                    "tuning": 442,
-                                    "mask": "@4$4!100 a.cd"
-                                }
-                            }
-                        }
-                    }
-                })
-                .unwrap()
-            )])),
-            Root::try_from(object! {
-                "My First Album": {
-                    "artist": "me",
-                    "tracks": {
-                        "My First Song": {
-                            "BPM": 60,
-                            "channels": {
-                                "piano": {
-                                    "instrument": {
-                                        "expr": "4*abs(f*t-floor(f*t+1/2))-1",
-                                        "resets": true
-                                    },
-                                    "notes": "aAbcCdDefFgG",
-                                    "tuning": 442,
-                                    "mask": "@4$4!100 .a"
+                                "notes": "aAbcCdDefFgG",
+                                "tuning": 442,
+                                "mask": "@4$4!100 .a"
+                            },
+                            "synth": {
+                                "instrument": {
+                                    "expr": "sin(2*pi*f*t)",
+                                    "resets": true
                                 },
-                                "synth": {
-                                    "instrument": {
-                                        "expr": "sin(2*pi*f*t)",
-                                        "resets": true
-                                    },
-                                    "notes": "aAbcCdDefFgG",
-                                    "tuning": 442,
-                                    "mask": "@4$4!100 a.cd"
-                                }
+                                "notes": "aAbcCdDefFgG",
+                                "tuning": 442,
+                                "mask": "@4$4!100 a.cd"
                             }
                         }
                     }
                 }
             })
             .unwrap()
-        );
-    }
+        )])),
+        Root::try_from(object! {
+            "My First Album": {
+                "artist": "me",
+                "tracks": {
+                    "My First Song": {
+                        "BPM": 60,
+                        "channels": {
+                            "piano": {
+                                "instrument": {
+                                    "expr": "4*abs(f*t-floor(f*t+1/2))-1",
+                                    "resets": true
+                                },
+                                "notes": "aAbcCdDefFgG",
+                                "tuning": 442,
+                                "mask": "@4$4!100 .a"
+                            },
+                            "synth": {
+                                "instrument": {
+                                    "expr": "sin(2*pi*f*t)",
+                                    "resets": true
+                                },
+                                "notes": "aAbcCdDefFgG",
+                                "tuning": 442,
+                                "mask": "@4$4!100 a.cd"
+                            }
+                        }
+                    }
+                }
+            }
+        })
+        .unwrap()
+    );
+}
+#[test]
+fn bpm_test() {
+    assert_eq!(
+        Root::try_from(object! {
+            "My First Album": {
+                "artist": "me",
+                "tracks": {
+                    "My First Song": {
+                        "BPM": 60,
+                        "channels": {
+                            "piano": {
+                                "instrument": {
+                                    "expr": "4*abs(f*t-floor(f*t+1/2))-1"
+                                },
+                                "notes": "aAbcCdDefFgG",
+                                "tuning": 442,
+                                "mask": "@4$4!100 ab"
+                            },
+                            "synth": {
+                                "instrument": {
+                                    "expr": "sin(2*pi*f*t)"
+                                },
+                                "notes": "aAbcCdDefFgG",
+                                "tuning": 442,
+                                "mask": "@4$4!100 ab"
+                            }
+                        }
+                    }
+                }
+            }
+        })
+        .unwrap()
+        .mix()
+        .unwrap()
+        .get("My First Album")
+        .unwrap()
+        .1
+        .get("My First Song")
+        .unwrap()
+        .len()
+            + 1,
+        Root::try_from(object! {
+            "My First Album": {
+                "artist": "me",
+                "tracks": {
+                    "My First Song": {
+                        "BPM": 120,
+                        "channels": {
+                            "piano": {
+                                "instrument": {
+                                    "expr": "4*abs(f*t-floor(f*t+1/2))-1"
+                                },
+                                "notes": "aAbcCdDefFgG",
+                                "tuning": 442,
+                                "mask": "@4$4!100 a"
+                            },
+                            "synth": {
+                                "instrument": {
+                                    "expr": "sin(2*pi*f*t)"
+                                },
+                                "notes": "aAbcCdDefFgG",
+                                "tuning": 442,
+                                "mask": "@4$4!100 a"
+                            }
+                        }
+                    }
+                }
+            }
+        })
+        .unwrap()
+        .mix()
+        .unwrap()
+        .get("My First Album")
+        .unwrap()
+        .1
+        .get("My First Song")
+        .unwrap()
+        .len()
+    )
+}
+#[test]
+fn note_loss_test() {
+    assert_eq!(
+        Root::try_from(object! {
+            "My First Album": {
+                "artist": "me",
+                "tracks": {
+                    "My First Song": {
+                        "BPM": 60,
+                        "channels": {
+                            "piano": {
+                                "instrument": {
+                                    "expr": "4*abs(f*t-floor(f*t+1/2))-1"
+                                },
+                                "notes": "aAbcCdDefFgG",
+                                "tuning": 442,
+                                "mask": "@4$4!100 ab"
+                            },
+                            "synth": {
+                                "instrument": {
+                                    "expr": "sin(2*pi*f*t)"
+                                },
+                                "notes": "aAbcCdDefFgG",
+                                "tuning": 442,
+                                "mask": "@4$4!100 a"
+                            }
+                        }
+                    }
+                }
+            }
+        })
+        .unwrap()
+        .mix()
+        .unwrap()
+        .get("My First Album")
+        .unwrap()
+        .1
+        .get("My First Song")
+        .unwrap()
+        .len()
+            + 1,
+        Root::try_from(object! {
+            "My First Album": {
+                "artist": "me",
+                "tracks": {
+                    "My First Song": {
+                        "BPM": 120,
+                        "channels": {
+                            "piano": {
+                                "instrument": {
+                                    "expr": "4*abs(f*t-floor(f*t+1/2))-1"
+                                },
+                                "notes": "aAbcCdDefFgG",
+                                "tuning": 442,
+                                "mask": "@4$4!100 a"
+                            },
+                            "synth": {
+                                "instrument": {
+                                    "expr": "sin(2*pi*f*t)"
+                                },
+                                "notes": "aAbcCdDefFgG",
+                                "tuning": 442,
+                                "mask": "@4$4!100 a"
+                            }
+                        }
+                    }
+                }
+            }
+        })
+        .unwrap()
+        .mix()
+        .unwrap()
+        .get("My First Album")
+        .unwrap()
+        .1
+        .get("My First Song")
+        .unwrap()
+        .len()
+    )
 }

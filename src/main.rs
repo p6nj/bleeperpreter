@@ -27,11 +27,12 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-// BPM is broken (inverted)
-// length is also inverted
+// length is inverted?
+// note loss!!
 
 /* Help for expressions:
  * https://thewolfsound.com/sine-saw-square-triangle-pulse-basic-waveforms-in-synthesis/
  * https://github.com/rekka/meval-rs#supported-expressions
  * https://www.desmos.com/calculator
+ * sine with vibrato (FM): sin((2*pi*f*t)-cos(2*pi*8*t))
  */
