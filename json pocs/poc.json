@@ -3,15 +3,16 @@
         "artist": "me",
         "tracks": {
             "My First Song": {
-                "BPM": 60,
+                "BPM": 10620,
                 "channels": {
                     "piano": {
                         "instrument": {
-                            "expr": "4*abs(f*t-floor(f*t+1/2))-1"
+                            "expr": "4*abs(f*t-floor(f*t+1/2))-1",
+                            "fmod": "f+5*sin(2*pi*10*t)"
                         },
                         "notes": "aAbcCdDefFgG",
                         "tuning": 442,
-                        "mask": "@4$4!100 .a"
+                        "mask": "@4$6!100 a"
                     },
                     "synth": {
                         "instrument": {
@@ -19,7 +20,7 @@
                         },
                         "notes": "aAbcCdDefFgG",
                         "tuning": 442,
-                        "mask": "@4$4!100 a.cd"
+                        "mask": "@4$6!100 ."
                     }
                 }
             }

@@ -27,6 +27,9 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+// BPM is broken (inverted)
+// length is also inverted
+
 /* Help for expressions:
  * https://thewolfsound.com/sine-saw-square-triangle-pulse-basic-waveforms-in-synthesis/
  * https://github.com/rekka/meval-rs#supported-expressions
