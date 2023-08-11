@@ -3,11 +3,11 @@ mod jsons;
 mod playing;
 mod processing;
 mod saving;
-mod tags;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use backbone::Root;
 use clap::Parser;
+#[allow(unused_imports)]
 use playing::play;
 use saving::save;
 use std::path::Path;

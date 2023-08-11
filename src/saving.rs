@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{backbone::SAMPLE_RATE, processing::MixedRoot, tags};
+use crate::{backbone::SAMPLE_RATE, processing::MixedRoot};
 use anyhow::{Context, Ok, Result};
 use dirs::home_dir;
 use hound::{SampleFormat, WavSpec};
@@ -29,12 +29,6 @@ pub(crate) fn save(mix: &MixedRoot) -> Result<()> {
                         .iter()
                         .map(|sample| (sample * (i16::MAX as f32)) as i16)
                         .try_for_each(|sample| writer.write_sample(sample))?;
-                    // let filename = filename
-                    //     .as_os_str()
-                    //     .to_str()
-                    //     .context("filename has invalid utf-8")?;
-                    // tags::apply(filename, album, artist)
-                    //     .with_context(|| format!("can't tag {}", filename))?;
                     Ok(())
                 })?;
             Ok(())

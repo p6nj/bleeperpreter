@@ -1,4 +1,4 @@
-use crate::backbone::{self, Instrument, MaskAtom};
+use crate::backbone::{self, MaskAtom};
 use anyhow::Result;
 use rayon::prelude::{IntoParallelRefMutIterator, ParallelIterator};
 use std::collections::HashMap;

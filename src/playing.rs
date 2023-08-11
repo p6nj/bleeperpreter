@@ -2,6 +2,7 @@ use crate::{backbone::SAMPLE_RATE, processing::MixedRoot};
 use anyhow::Result;
 use rodio::{buffer::SamplesBuffer, OutputStream, Source};
 
+#[allow(dead_code)]
 pub(crate) fn play(mix: &MixedRoot) -> Result<()> {
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     mix.iter()

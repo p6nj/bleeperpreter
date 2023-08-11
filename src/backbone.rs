@@ -1,27 +1,17 @@
 use anyhow::{Context, Error, Ok, Result};
-use audio_processor_analysis::window_functions::make_hann_vec;
 use derive_new::new;
-use json::{object, JsonValue};
+#[allow(unused_imports)]
+use json::object;
+use json::JsonValue;
 use meval::Expr;
 use nom::branch::alt;
 use nom::character::complete::{char, digit1, space0};
 use nom::multi::many0;
 use nom::{character::complete::one_of, combinator::map_res, sequence::preceded, IResult};
-use rayon::prelude::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
-use rodio::{Decoder, Source};
-use spectrum_analyzer::{samples_fft_to_spectrum, FrequencyLimit};
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::fs::File;
-use std::io::BufReader;
 use std::num::NonZeroU8;
 use std::str::FromStr;
-
-mod resampling;
-use resampling::resample;
-
-mod pitch_shift;
-use pitch_shift::PitchShifter;
 
 pub(crate) const SAMPLE_RATE: u32 = 48000;
 
