@@ -15,7 +15,7 @@
                     },
                     "synth": {
                         "instrument": {
-                            "expr": "sin((2*pi*f*t)-cos(2*pi*8*t))"
+                            "expr": "sin((2*pi*f*t)-sin(2*pi*8*t))"
                         },
                         "notes": "aAbcCdDefFgG",
                         "tuning": 442,
