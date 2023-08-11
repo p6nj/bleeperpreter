@@ -42,7 +42,7 @@ pub(crate) struct Track {
 
 #[derive(PartialEq, Debug)]
 pub(crate) enum Instrument {
-    Expression { expr: Expr, fmod: Expr },
+    Expression { expr: Expr },
 }
 
 impl Instrument {
@@ -52,9 +52,8 @@ impl Instrument {
         tuning: f32,
     ) -> Result<impl Fn(usize, u8, u8, u8) -> Vec<f32>> {
         match self {
-            Self::Expression { expr, fmod } => {
+            Self::Expression { expr } => {
                 let func = expr.clone().bind2("t", "f")?;
-                let fmod = fmod.clone().bind2("t", "f")?;
                 Ok(
                     move |len: usize, n: u8, octave: u8, volume: u8| -> Vec<f32> {
                         let f = (tuning as f64 / 16f64)
@@ -62,7 +61,6 @@ impl Instrument {
                         (1..len)
                             .map(|i| {
                                 let t = (i as f64) / (SAMPLE_RATE as f64);
-                                let f = fmod(t, f); // this is fine!
                                 (func(t, f) * ((volume as f64) / 100f64)) as f32
                             })
                             .collect()
@@ -141,8 +139,6 @@ impl TryFrom<&JsonValue> for Instrument {
                         .context(err_field("expr", "string"))?,
                 )
                 .context("invalid instrument expression")?,
-                fmod: Expr::from_str(value["fmod"].as_str().unwrap_or("f"))
-                    .context("invalid fmod expression")?,
             }),
             _ => Err(Error::msg("unknown instrument type")),
         }
@@ -280,8 +276,7 @@ fn mask_parser() {
 fn instrument_parser() {
     assert_eq!(
         Instrument::Expression {
-            expr: Expr::from_str("sin(2*pi*f*t)").unwrap(),
-            fmod: Expr::from_str("f").unwrap()
+            expr: Expr::from_str("sin(2*pi*f*t)").unwrap()
         },
         Instrument::try_from(&object! {
             "expr": "sin(2*pi*f*t)"
@@ -294,8 +289,7 @@ fn channel_parser() {
     assert_eq!(
         Channel {
             instrument: Instrument::Expression {
-                expr: Expr::from_str("sin(2*pi*f*x)").unwrap(),
-                fmod: Expr::from_str("f").unwrap()
+                expr: Expr::from_str("sin(2*pi*f*x)").unwrap()
             },
             tuning: 442f32,
             mask: Mask(
