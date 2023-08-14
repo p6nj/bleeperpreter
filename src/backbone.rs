@@ -1,17 +1,15 @@
-use anyhow::{Context, Error, Ok, Result};
+use anyhow::{Context, Error as AError, Ok, Result};
 use derive_new::new;
-#[allow(unused_imports)]
-use json::object;
 use json::JsonValue;
+use logos::{Lexer, Logos, Skip};
 use meval::Expr;
-use nom::branch::alt;
-use nom::character::complete::{char, digit1, space0};
-use nom::multi::many0;
-use nom::{character::complete::one_of, combinator::map_res, sequence::preceded, IResult};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::num::NonZeroU8;
 use std::str::FromStr;
+use text_lines::TextLines as TextPosition;
+mod parsing_errors;
+use parsing_errors::Error as PError;
 
 pub(crate) const SAMPLE_RATE: u32 = 48000;
 
@@ -68,50 +66,50 @@ pub(crate) struct Channel {
     pub(crate) mask: Mask,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Logos)]
+#[logos(extras = Extras)]
+#[logos(error = PError)]
 pub(crate) enum MaskAtom {
+    #[regex(r"@[0-9]{2}", octave)]
     Octave(NonZeroU8),
     Length(u8),
     Volume(u8),
     Note(u8),
+    #[token(".")]
     Rest,
+    #[regex(r"[ \t\n\f\r]+", junk)]
+    Dummy,
 }
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Mask(pub(crate) u8, pub(crate) Vec<MaskAtom>);
 
-fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
-    map_res(one_of(notes), move |c| {
-        Ok::<MaskAtom>(MaskAtom::Note(
-            notes
-                .find(c)
-                .with_context(|| format!("unknown note: {}", c))?
-                .try_into()
-                .context("converting note index to u8 (shouldn't fail)")?,
-        ))
-    })
+pub(crate) struct Extras {
+    notes: String,
+    position: TextPosition,
+    index: usize,
 }
 
-fn rest<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
-    map_res(char('.'), move |_| Ok::<MaskAtom>(MaskAtom::Rest))
+impl Extras {
+    fn new(notes: String, position: TextPosition) -> Self {
+        Extras {
+            notes: notes,
+            position: position,
+            index: 0,
+        }
+    }
+}
+fn increment(lex: &mut Lexer<MaskAtom>) {
+    lex.extras.index += lex.slice().chars().count();
 }
 
-fn length<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
-    map_res(preceded(char('$'), map_res(digit1, str::parse)), move |n| {
-        Ok::<MaskAtom>(MaskAtom::Length(n))
-    })
+fn junk(lex: &mut Lexer<MaskAtom>) -> Skip {
+    increment(lex);
+    Skip
 }
 
-fn octave<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
-    map_res(preceded(char('@'), map_res(digit1, str::parse)), move |n| {
-        Ok::<MaskAtom>(MaskAtom::Octave(n))
-    })
-}
-
-fn volume<'a>() -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
-    map_res(preceded(char('!'), map_res(digit1, str::parse)), move |n| {
-        Ok::<MaskAtom>(MaskAtom::Volume(n))
-    })
+fn octave(lex: &mut Lexer<MaskAtom>) -> Option<NonZeroU8> {
+    Some(NonZeroU8::new(7).unwrap())
 }
 
 fn err_field(field: &str, r#type: &str) -> String {
@@ -119,7 +117,7 @@ fn err_field(field: &str, r#type: &str) -> String {
 }
 
 impl TryFrom<&JsonValue> for Instrument {
-    type Error = Error;
+    type Error = AError;
     fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
         match value.entries().next().context("empty instrument")?.0 {
             "expr" => Ok(Instrument::Expression {
@@ -130,14 +128,14 @@ impl TryFrom<&JsonValue> for Instrument {
                 )
                 .context("invalid instrument expression")?,
             }),
-            _ => Err(Error::msg("unknown instrument type")),
+            _ => Err(AError::msg("unknown instrument type")),
         }
     }
 }
 
 impl TryFrom<&JsonValue> for Channel {
-    type Error = Error;
-    fn try_from(value: &JsonValue) -> Result<Self, Error> {
+    type Error = AError;
+    fn try_from(value: &JsonValue) -> Result<Self, AError> {
         Ok(Channel {
             instrument: (&value["instrument"]).try_into()?,
             tuning: value["tuning"]
@@ -150,30 +148,35 @@ impl TryFrom<&JsonValue> for Channel {
 
 /// From the string mask and a string of allowed notes
 impl TryFrom<&JsonValue> for Mask {
-    type Error = Error;
+    type Error = AError;
     fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
         let notes = value["notes"]
             .as_str()
             .context("the \"notes\" field is not a string")?;
         Ok(Mask(
             notes.len().try_into()?,
-            many0(preceded(
-                space0,
-                alt((note(notes), rest(), length(), octave(), volume())),
-            ))(
+            MaskAtom::lexer_with_extras(
                 value["mask"]
                     .as_str()
-                    .context("the \"mask\" field is not a string")?,
+                    .context(err_field("mask", "string"))?,
+                Extras::new(
+                    notes.to_string(),
+                    TextPosition::new(value["mask"].as_str().unwrap()),
+                ),
             )
-            .map_err(|e| e.to_owned())
-            .context("cannot parse mask input")?
-            .1,
+            .inspect(|e| {
+                if let Err(e) = e {
+                    eprintln!("Warning: {:?}", e);
+                }
+            })
+            .flatten()
+            .collect(),
         ))
     }
 }
 
 impl TryFrom<&JsonValue> for Track {
-    type Error = Error;
+    type Error = AError;
     fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
         Ok(Track::new(
             value["BPM"].as_u16().context(err_field("BPM", "u16"))?,
@@ -188,7 +191,7 @@ impl TryFrom<&JsonValue> for Track {
 }
 
 impl TryFrom<&JsonValue> for Album {
-    type Error = Error;
+    type Error = AError;
     fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
         Ok(Album::new(
             value["artist"]
@@ -206,7 +209,7 @@ impl TryFrom<&JsonValue> for Album {
 }
 
 impl TryFrom<JsonValue> for Root {
-    type Error = Error;
+    type Error = AError;
     fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
         Ok(Root(
             value
@@ -219,25 +222,6 @@ impl TryFrom<JsonValue> for Root {
     }
 }
 
-#[test]
-fn note_parser() {
-    assert_eq!(("iueg", MaskAtom::Note(2)), note("abcde")("ciueg").unwrap());
-}
-#[test]
-fn length_parser() {
-    assert_eq!(("iueg", MaskAtom::Length(16)), length()("$16iueg").unwrap());
-}
-#[test]
-fn octave_parser() {
-    assert_eq!(
-        ("iueg", MaskAtom::Octave(NonZeroU8::new(4).unwrap())),
-        octave()("@4iueg").unwrap()
-    );
-}
-#[test]
-fn rest_parser() {
-    assert_eq!(("iueg", MaskAtom::Rest), rest()(".iueg").unwrap());
-}
 #[test]
 fn mask_parser() {
     assert_eq!(
@@ -253,7 +237,7 @@ fn mask_parser() {
                 MaskAtom::Note(5)
             ]
         ),
-        Mask::try_from(&object! {
+        Mask::try_from(&json::object! {
             "instrument": "piano-sample",
             "notes": "aAbcCdDefFgG",
             "tuning": 442,
@@ -268,7 +252,7 @@ fn instrument_parser() {
         Instrument::Expression {
             expr: Expr::from_str("sin(2*pi*f*t)").unwrap()
         },
-        Instrument::try_from(&object! {
+        Instrument::try_from(&json::object! {
             "expr": "sin(2*pi*f*t)"
         })
         .unwrap()
@@ -295,7 +279,7 @@ fn channel_parser() {
                 ]
             )
         },
-        Channel::try_from(&object! {
+        Channel::try_from(&json::object! {
             "instrument": {
                 "expr": "sin(2*pi*f*x)"
             },
@@ -311,7 +295,7 @@ fn root_parser() {
     assert_eq!(
         Root(HashMap::from([(
             "My First Album".to_string(),
-            Album::try_from(&object! {
+            Album::try_from(&json::object! {
                 "artist": "me",
                 "tracks": {
                     "My First Song": {
@@ -341,7 +325,7 @@ fn root_parser() {
             })
             .unwrap()
         )])),
-        Root::try_from(object! {
+        Root::try_from(json::object! {
             "My First Album": {
                 "artist": "me",
                 "tracks": {
@@ -377,7 +361,7 @@ fn root_parser() {
 #[test]
 fn bpm_test() {
     assert_eq!(
-        Root::try_from(object! {
+        Root::try_from(json::object! {
             "My First Album": {
                 "artist": "me",
                 "tracks": {
@@ -415,7 +399,7 @@ fn bpm_test() {
         .unwrap()
         .len()
             + 1,
-        Root::try_from(object! {
+        Root::try_from(json::object! {
             "My First Album": {
                 "artist": "me",
                 "tracks": {
@@ -457,7 +441,7 @@ fn bpm_test() {
 #[test]
 fn note_loss_test() {
     assert_eq!(
-        Root::try_from(object! {
+        Root::try_from(json::object! {
             "My First Album": {
                 "artist": "me",
                 "tracks": {
@@ -495,7 +479,7 @@ fn note_loss_test() {
         .unwrap()
         .len()
             + 1,
-        Root::try_from(object! {
+        Root::try_from(json::object! {
             "My First Album": {
                 "artist": "me",
                 "tracks": {
