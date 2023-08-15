@@ -1,4 +1,4 @@
-use anyhow::{Context, Error as AError, Ok, Result};
+use anyhow::{Context, Error as AError, Ok as AOk, Result as AResult};
 use derive_new::new;
 use json::JsonValue;
 use logos::{Lexer, Logos, Skip};
@@ -9,7 +9,7 @@ use std::num::NonZeroU8;
 use std::str::FromStr;
 use text_lines::TextLines as TextPosition;
 mod parsing_errors;
-use parsing_errors::Error as PError;
+use parsing_errors::ParseError as PError;
 
 pub(crate) const SAMPLE_RATE: u32 = 48000;
 
@@ -38,11 +38,11 @@ impl Instrument {
         &self,
         notes: u8,
         tuning: f32,
-    ) -> Result<impl Fn(usize, u8, u8, u8) -> Vec<f32>> {
+    ) -> AResult<impl Fn(usize, u8, u8, u8) -> Vec<f32>> {
         match self {
             Self::Expression { expr } => {
                 let func = expr.clone().bind2("t", "f")?;
-                Ok(
+                AOk(
                     move |len: usize, n: u8, octave: u8, volume: u8| -> Vec<f32> {
                         let f = (tuning as f64 / 16f64)
                             * 2.0_f64.powf(((notes * octave + n) as f64) / (notes as f64));
@@ -108,8 +108,8 @@ fn junk(lex: &mut Lexer<MaskAtom>) -> Skip {
     Skip
 }
 
-fn octave(lex: &mut Lexer<MaskAtom>) -> Option<NonZeroU8> {
-    Some(NonZeroU8::new(7).unwrap())
+fn octave(lex: &mut Lexer<MaskAtom>) -> Result<NonZeroU8, PError> {
+    Ok(NonZeroU8::new(7).unwrap())
 }
 
 fn err_field(field: &str, r#type: &str) -> String {
@@ -118,9 +118,9 @@ fn err_field(field: &str, r#type: &str) -> String {
 
 impl TryFrom<&JsonValue> for Instrument {
     type Error = AError;
-    fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
+    fn try_from(value: &JsonValue) -> AResult<Self, Self::Error> {
         match value.entries().next().context("empty instrument")?.0 {
-            "expr" => Ok(Instrument::Expression {
+            "expr" => AOk(Instrument::Expression {
                 expr: Expr::from_str(
                     value["expr"]
                         .as_str()
@@ -135,8 +135,8 @@ impl TryFrom<&JsonValue> for Instrument {
 
 impl TryFrom<&JsonValue> for Channel {
     type Error = AError;
-    fn try_from(value: &JsonValue) -> Result<Self, AError> {
-        Ok(Channel {
+    fn try_from(value: &JsonValue) -> AResult<Self, AError> {
+        AOk(Channel {
             instrument: (&value["instrument"]).try_into()?,
             tuning: value["tuning"]
                 .as_f32()
@@ -149,11 +149,11 @@ impl TryFrom<&JsonValue> for Channel {
 /// From the string mask and a string of allowed notes
 impl TryFrom<&JsonValue> for Mask {
     type Error = AError;
-    fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
+    fn try_from(value: &JsonValue) -> AResult<Self, Self::Error> {
         let notes = value["notes"]
             .as_str()
             .context("the \"notes\" field is not a string")?;
-        Ok(Mask(
+        AOk(Mask(
             notes.len().try_into()?,
             MaskAtom::lexer_with_extras(
                 value["mask"]
@@ -177,47 +177,47 @@ impl TryFrom<&JsonValue> for Mask {
 
 impl TryFrom<&JsonValue> for Track {
     type Error = AError;
-    fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
-        Ok(Track::new(
+    fn try_from(value: &JsonValue) -> AResult<Self, Self::Error> {
+        AOk(Track::new(
             value["BPM"].as_u16().context(err_field("BPM", "u16"))?,
             value["channels"]
                 .entries()
-                .map(move |(name, chan)| -> anyhow::Result<(String, Channel)> {
-                    Ok((name.to_string(), chan.try_into()?))
+                .map(move |(name, chan)| -> AResult<(String, Channel)> {
+                    AOk((name.to_string(), chan.try_into()?))
                 })
-                .collect::<anyhow::Result<HashMap<String, Channel>>>()?,
+                .collect::<AResult<HashMap<String, Channel>>>()?,
         ))
     }
 }
 
 impl TryFrom<&JsonValue> for Album {
     type Error = AError;
-    fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
-        Ok(Album::new(
+    fn try_from(value: &JsonValue) -> AResult<Self, Self::Error> {
+        AOk(Album::new(
             value["artist"]
                 .as_str()
                 .context(err_field("artist", "string"))?
                 .to_string(),
             value["tracks"]
                 .entries()
-                .map(move |(name, track)| -> anyhow::Result<(String, Track)> {
-                    Ok((name.to_string(), track.try_into()?))
+                .map(move |(name, track)| -> AResult<(String, Track)> {
+                    AOk((name.to_string(), track.try_into()?))
                 })
-                .collect::<anyhow::Result<HashMap<String, Track>>>()?,
+                .collect::<AResult<HashMap<String, Track>>>()?,
         ))
     }
 }
 
 impl TryFrom<JsonValue> for Root {
     type Error = AError;
-    fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
-        Ok(Root(
+    fn try_from(value: JsonValue) -> AResult<Self, Self::Error> {
+        AOk(Root(
             value
                 .entries()
-                .map(move |(name, album)| -> anyhow::Result<(String, Album)> {
-                    Ok((name.to_string(), album.try_into()?))
+                .map(move |(name, album)| -> AResult<(String, Album)> {
+                    AOk((name.to_string(), album.try_into()?))
                 })
-                .collect::<anyhow::Result<HashMap<String, Album>>>()?,
+                .collect::<AResult<HashMap<String, Album>>>()?,
         ))
     }
 }

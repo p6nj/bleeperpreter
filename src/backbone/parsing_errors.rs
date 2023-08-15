@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 
 use derive_new::new;
-use text_lines::TextLines;
 
 #[derive(PartialEq, Clone)]
 pub enum ErrorKind {
@@ -13,7 +12,7 @@ pub enum ErrorKind {
 }
 
 #[derive(Clone, PartialEq, Default, new)]
-pub struct Error {
+pub struct ParseError {
     kind: ErrorKind,
     at: (usize, usize),
 }
@@ -32,7 +31,7 @@ impl Debug for ErrorKind {
     }
 }
 
-impl Debug for Error {
+impl Debug for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?} at {:?}", self.kind, self.at)
     }
