@@ -1,8 +1,8 @@
 use derive_new::new;
 use std::fmt::Debug;
 
-#[derive(Clone, PartialEq, Default, new)]
-pub struct ParseError {
+#[derive(Clone, PartialEq, new)]
+pub(crate) struct ParseError {
     msg: String,
     at: (usize, usize),
 }
@@ -10,5 +10,11 @@ pub struct ParseError {
 impl Debug for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} just before {:?}", self.msg, self.at)
+    }
+}
+
+impl Default for ParseError {
+    fn default() -> Self {
+        ParseError::new("Dummy error".to_string(), (0, 0))
     }
 }
