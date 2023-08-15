@@ -1,15 +1,9 @@
-use std::{
-    fs::create_dir,
-    path::{Path, PathBuf},
-};
-
 use crate::{backbone::SAMPLE_RATE, processing::MixedRoot};
-use anyhow::{Context, Ok, Result};
-use dirs::home_dir;
+use anyhow::{Ok, Result};
 use hound::{SampleFormat, WavSpec};
+use std::{fs::create_dir, path::Path};
 
-pub(crate) fn save(mix: &MixedRoot) -> Result<()> {
-    let dir = setup()?;
+pub(crate) fn save<P: AsRef<Path>>(mix: &MixedRoot, dir: P) -> Result<()> {
     let spec = WavSpec {
         channels: 1,
         sample_rate: SAMPLE_RATE,
@@ -18,7 +12,7 @@ pub(crate) fn save(mix: &MixedRoot) -> Result<()> {
     };
     mix.iter()
         .try_for_each(|(album, (artist, album_data))| -> Result<()> {
-            let album_dir = dir.join(format!("{} - {}", artist, album));
+            let album_dir = dir.as_ref().join(format!("{} - {}", artist, album));
             mkdir(&album_dir)?;
             album_data
                 .iter()
@@ -36,14 +30,8 @@ pub(crate) fn save(mix: &MixedRoot) -> Result<()> {
     Ok(())
 }
 
-fn setup() -> Result<PathBuf> {
-    let dir = home_dir().context("can't get home dir")?.join("Documents");
-    mkdir(&dir).context("can't create Documents directory")?;
-    Ok(dir)
-}
-
-fn mkdir(path: &Path) -> Result<()> {
-    if !path.exists() {
+fn mkdir<P: AsRef<Path>>(path: P) -> Result<()> {
+    if !path.as_ref().exists() {
         create_dir(path)?;
     };
     Ok(())

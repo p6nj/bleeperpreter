@@ -85,7 +85,6 @@ impl backbone::Channel {
                 MaskAtom::Volume(v) => volume = v,
                 MaskAtom::Note(n) => result.append(&mut gen(real_length, n, octave, volume)),
                 MaskAtom::Rest => result.append(&mut vec![0f32; real_length]),
-                MaskAtom::Dummy => unreachable!("Dummy variant"),
             };
             Ok(())
         })?;

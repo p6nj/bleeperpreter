@@ -11,16 +11,15 @@ mod tests;
 pub(crate) enum MaskAtom {
     #[regex(r"@\d{1,2}", octave)]
     Octave(NonZeroU8),
-    #[regex(r"\$\d{1,3}", || normal_cmd_callback_generator("length"))]
+    #[regex(r"\$\d{1,3}", (normal_cmd_callback_generator("length")))]
     Length(u8),
-    #[regex(r"!\d{1,3}", || normal_cmd_callback_generator("volume"))]
+    #[regex(r"!\d{1,3}", (normal_cmd_callback_generator("volume")))]
     Volume(u8),
     #[regex(r"\p{L}", note)]
     Note(u8),
     #[token(".")]
-    Rest,
     #[regex(r"[ \t\n\f\r]+", junk)]
-    Dummy,
+    Rest,
 }
 
 pub(crate) struct Extras {

@@ -1,7 +1,7 @@
 use anyhow::{Context, Error};
 use json::JsonValue;
-use std::{fs::read_to_string, path::PathBuf};
-pub(crate) fn parse(file: PathBuf) -> Result<JsonValue, Error> {
+use std::{fs::read_to_string, path::Path};
+pub(crate) fn parse<P: AsRef<Path>>(file: P) -> Result<JsonValue, Error> {
     validate(json::parse(
         read_to_string(file)
             .context("error reading json file")?

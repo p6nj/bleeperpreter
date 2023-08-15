@@ -7,23 +7,20 @@ mod saving;
 use anyhow::Result;
 use backbone::Root;
 use clap::Parser;
-#[allow(unused_imports)]
-use playing::play;
 use saving::save;
-use std::path::Path;
+
 #[derive(Debug, Parser)]
-#[clap(version, about = "An advanced MML interpreter")]
+#[clap(version, about = "An advanced JSON MML interpreter")]
 struct Arguments {
-    json_path: String,
+    r#in: String,
+    out: String,
 }
 
 fn main() -> Result<()> {
-    // let args = Arguments::parse();
-    // jsons::parse(args.json_path).context("error parsing json file")?;
-    // jsons::parse(Path::new("json pocs").join("poc1.json"))?
-    let parsed: Root = jsons::parse(Path::new("json pocs").join("poc.json"))?.try_into()?;
+    let args = Arguments::parse();
+    let parsed: Root = jsons::parse(args.r#in)?.try_into()?;
     let mix = parsed.mix()?;
-    save(&mix)?;
+    save(&mix, args.out)?;
     Ok(())
 }
 
