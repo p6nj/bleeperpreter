@@ -1,6 +1,7 @@
 use anyhow::{Ok, Result};
 use derive_new::new;
 use meval::Expr;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
@@ -10,16 +11,16 @@ mod parsing;
 
 pub(crate) const SAMPLE_RATE: u32 = 48000;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Serialize)]
 pub(crate) struct Root(pub(crate) HashMap<String, Album>);
 
-#[derive(new, PartialEq, Debug)]
+#[derive(new, PartialEq, Debug, Serialize)]
 pub(crate) struct Album {
     pub(crate) artist: String,
     pub(crate) tracks: HashMap<String, Track>,
 }
 
-#[derive(new, PartialEq, Debug)]
+#[derive(new, PartialEq, Debug, Serialize)]
 pub(crate) struct Track {
     pub(crate) bpm: u16,
     pub(crate) channels: HashMap<String, Channel>,
@@ -28,6 +29,17 @@ pub(crate) struct Track {
 #[derive(PartialEq, Debug)]
 pub(crate) enum Instrument {
     Expression { expr: Expr },
+}
+
+impl Serialize for Instrument {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Expression { expr } => serializer.serialize_str(format!("{:?}", expr).as_str()),
+        }
+    }
 }
 
 impl Instrument {
@@ -56,12 +68,12 @@ impl Instrument {
     }
 }
 
-#[derive(PartialEq, Debug, new)]
+#[derive(PartialEq, Debug, new, Serialize)]
 pub(crate) struct Channel {
     pub(crate) instrument: Instrument,
     pub(crate) tuning: f32,
     pub(crate) mask: Mask,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub(crate) struct Mask(pub(crate) u8, pub(crate) Vec<MaskAtom>);
