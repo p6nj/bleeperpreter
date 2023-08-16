@@ -1,4 +1,4 @@
-use super::parsing_errors::ParseError as PError;
+use super::parsing_errors::ParseError;
 use logos::{Lexer, Logos, Skip};
 use std::num::NonZeroU8;
 use text_lines::TextLines as TextPosition;
@@ -7,7 +7,7 @@ mod tests;
 
 #[derive(PartialEq, Debug, Logos)]
 #[logos(extras = Extras)]
-#[logos(error = PError)]
+#[logos(error = ParseError)]
 pub(crate) enum MaskAtom {
     #[regex(r"@\d{1,2}", octave)]
     Octave(NonZeroU8),
@@ -52,12 +52,12 @@ fn at(lex: &Lexer<MaskAtom>) -> (usize, usize) {
 
 fn normal_cmd_callback_generator(
     for_: &str,
-) -> impl Fn(&mut Lexer<MaskAtom>) -> Result<u8, PError> + '_ {
+) -> impl Fn(&mut Lexer<MaskAtom>) -> Result<u8, ParseError> + '_ {
     move |lex| {
         increment(lex);
         lex.slice()[1..]
             .parse()
-            .map_err(|_| PError::new(format!("Expected a {} number", for_), at(lex)))
+            .map_err(|_| ParseError::new(format!("Expected a {} number", for_), at(lex)))
     }
 }
 
@@ -66,21 +66,24 @@ fn junk(lex: &mut Lexer<MaskAtom>) -> Skip {
     Skip
 }
 
-fn octave(lex: &mut Lexer<MaskAtom>) -> Result<NonZeroU8, PError> {
+fn octave(lex: &mut Lexer<MaskAtom>) -> Result<NonZeroU8, ParseError> {
     increment(lex);
     NonZeroU8::new(
         lex.slice()[1..]
             .parse()
-            .map_err(|_| PError::new("Expected an octave number".to_string(), at(lex)))?,
+            .map_err(|_| ParseError::new("Expected an octave number".to_string(), at(lex)))?,
     )
-    .ok_or(PError::new("Octave 0 does not exist".to_string(), at(lex)))
+    .ok_or(ParseError::new(
+        "Octave 0 does not exist".to_string(),
+        at(lex),
+    ))
 }
 
-fn note(lex: &mut Lexer<MaskAtom>) -> Result<u8, PError> {
+fn note(lex: &mut Lexer<MaskAtom>) -> Result<u8, ParseError> {
     increment(lex);
     Ok(lex
         .extras
         .notes
         .find(lex.slice().chars().next().unwrap())
-        .ok_or(PError::new("Unkown note".to_string(), at(lex)))? as u8)
+        .ok_or(ParseError::new("Unkown note".to_string(), at(lex)))? as u8)
 }
