@@ -17,7 +17,11 @@ struct Arguments {
 }
 
 fn main() -> Result<()> {
-    let args = Arguments::parse();
+    // let args = Arguments::parse();
+    let args = Arguments {
+        r#in: r".\json pocs\poc.json".to_string(),
+        out: r".\sound\".to_string(),
+    };
     let parsed: Root = jsons::parse(args.r#in)?.try_into()?;
     let mix = parsed.mix()?;
     save(&mix, args.out)?;
