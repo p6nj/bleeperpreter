@@ -23,9 +23,8 @@ fn main() -> Result<()> {
         out: r".\sound\".to_string(),
     };
     let parsed: Root = jsons::parse(args.r#in)?.try_into()?;
-    println!("{}", serde_json::to_string_pretty(&parsed)?);
-    // let mix = parsed.mix()?;
-    // save(&mix, args.out)?;
+    let mix = parsed.mix()?;
+    save(&mix, args.out)?;
     Ok(())
 }
 
@@ -37,4 +36,6 @@ fn main() -> Result<()> {
  * https://github.com/rekka/meval-rs#supported-expressions
  * https://www.desmos.com/calculator
  * sine with vibrato (FM): sin((2*pi*f*t)-cos(2*pi*8*t))
+ * easy sine-like triangular wave: (2/pi)*signum(sin(t))*(t%pi)-signum(sin(t))
+ * FM for any 2pi-periodic (sine-like) function: https://www.desmos.com/calculator/hfxv6h1n9n
  */
