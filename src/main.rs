@@ -24,8 +24,8 @@ fn main() -> Result<()> {
     };
     let parsed: Root = jsons::parse(args.r#in)?.try_into()?;
     println!("{}", serde_json::to_string_pretty(&parsed)?);
-    let mix = parsed.mix()?;
-    save(&mix, args.out)?;
+    // let mix = parsed.mix()?;
+    // save(&mix, args.out)?;
     Ok(())
 }
 

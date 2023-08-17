@@ -4,8 +4,7 @@ use super::{Album, Channel, Instrument, Mask, Root, Track};
 use ::logos::Logos;
 use anyhow::{Context, Error, Result};
 use json::JsonValue;
-use meval::Expr;
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 use text_lines::TextLines as TextPosition;
 mod logos;
 mod parsing_errors;
@@ -21,12 +20,10 @@ impl TryFrom<&JsonValue> for Instrument {
     fn try_from(value: &JsonValue) -> Result<Self, Self::Error> {
         match value.entries().next().context("empty instrument")?.0 {
             "expr" => Ok(Instrument::Expression {
-                expr: Expr::from_str(
-                    value["expr"]
-                        .as_str()
-                        .context(err_field("expr", "string"))?,
-                )
-                .context("invalid instrument expression")?,
+                expr: value["expr"]
+                    .as_str()
+                    .context(err_field("expr", "string"))?
+                    .to_string(),
             }),
             _ => Err(Error::msg("unknown instrument type")),
         }
@@ -38,6 +35,10 @@ impl TryFrom<&JsonValue> for Channel {
     fn try_from(value: &JsonValue) -> Result<Self, Error> {
         Ok(Channel {
             instrument: (&value["instrument"]).try_into()?,
+            notes: value["notes"]
+                .as_str()
+                .context(err_field("notes", "string"))?
+                .to_string(),
             tuning: value["tuning"]
                 .as_f32()
                 .context(err_field("tuning", "unsigned 16-bit integer"))?,
@@ -54,7 +55,7 @@ impl TryFrom<&JsonValue> for Mask {
             .as_str()
             .context("the \"notes\" field is not a string")?;
         Ok(Mask(
-            notes.len().try_into()?,
+            notes.to_string(),
             MaskAtom::lexer_with_extras(
                 value["mask"]
                     .as_str()

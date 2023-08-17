@@ -77,7 +77,7 @@ impl backbone::Channel {
         };
         let mut real_length = genlength(4)?;
 
-        let gen = self.instrument.gen(self.mask.0, self.tuning)?;
+        let gen = self.instrument.gen(self.mask.0.len() as u8, self.tuning)?;
         self.mask.1.iter().try_for_each(|a| -> Result<()> {
             match *a {
                 MaskAtom::Octave(o) => octave = u8::from(o) - 1,
