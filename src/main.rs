@@ -8,6 +8,8 @@ use anyhow::Result;
 use backbone::Root;
 use clap::Parser;
 use saving::save;
+use serde_json::from_str;
+use std::fs::read_to_string;
 
 #[derive(Debug, Parser)]
 #[clap(version, about = "An advanced JSON MML interpreter")]
@@ -22,7 +24,7 @@ fn main() -> Result<()> {
         r#in: r".\json pocs\poc.json".to_string(),
         out: r".\sound\".to_string(),
     };
-    let parsed: Root = jsons::parse(args.r#in)?.try_into()?;
+    let parsed: Root = from_str(read_to_string(args.r#in)?.as_str())?;
     let mix = parsed.mix()?;
     save(&mix, args.out)?;
     Ok(())
