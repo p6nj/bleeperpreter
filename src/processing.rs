@@ -1,4 +1,4 @@
-use crate::backbone::{self, MaskAtom};
+use crate::structure::{self, MaskAtom};
 use anyhow::Result;
 use rayon::prelude::{IntoParallelRefMutIterator, ParallelIterator};
 use std::collections::HashMap;
@@ -10,7 +10,7 @@ type Samples = Vec<f32>;
 type MixedAlbum = (String, HashMap<String, Samples>);
 pub(crate) type MixedRoot = HashMap<String, MixedAlbum>;
 
-impl backbone::Track {
+impl structure::Track {
     fn process(&mut self) -> Result<Track> {
         self.channels
             .par_iter_mut()
@@ -21,7 +21,7 @@ impl backbone::Track {
     }
 }
 
-impl backbone::Album {
+impl structure::Album {
     fn process(&mut self) -> Result<Album> {
         Ok((
             self.artist.clone(),
@@ -62,7 +62,7 @@ impl backbone::Album {
     }
 }
 
-impl backbone::Channel {
+impl structure::Channel {
     fn process(&mut self, bpm: &u16) -> Result<Samples> {
         let sr = 48000u32;
         let mut octave = 4u8;
@@ -92,7 +92,7 @@ impl backbone::Channel {
     }
 }
 
-impl backbone::Root {
+impl structure::Root {
     pub(crate) fn mix(mut self) -> Result<MixedRoot> {
         self.0
             .iter_mut()

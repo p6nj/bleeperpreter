@@ -1,4 +1,4 @@
-use crate::{backbone::SAMPLE_RATE, processing::MixedRoot};
+use crate::{processing::MixedRoot, structure::SAMPLE_RATE};
 use anyhow::Result;
 use rodio::{buffer::SamplesBuffer, OutputStream, Source};
 

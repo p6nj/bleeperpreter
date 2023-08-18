@@ -5,9 +5,9 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
-pub(crate) use self::parsing::MaskAtom;
+pub(crate) use self::de::MaskAtom;
 
-mod parsing;
+mod de;
 
 pub(crate) const SAMPLE_RATE: u32 = 48000;
 

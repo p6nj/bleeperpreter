@@ -8,7 +8,7 @@ use text_lines::TextLines;
 mod logos;
 use self::logos::Extras;
 pub(crate) use self::logos::MaskAtom;
-mod parsing_errors;
+mod de_errors;
 
 impl<'de> Deserialize<'de> for Notes {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

@@ -1,32 +1,60 @@
-mod backbone;
 mod playing;
 mod processing;
 mod saving;
+mod structure;
 
 use anyhow::Result;
-use backbone::Root;
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use playing::play;
+use saving::save;
 use serde_json::from_str;
 use std::fs::read_to_string;
+use structure::Root;
 
-#[derive(Debug, Parser)]
-#[clap(version, about = "An advanced JSON MML interpreter")]
-struct Arguments {
-    r#in: String,
-    out: String,
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    cmd: Command,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Generate a directory tree of generated wav files
+    Save {
+        /// JSON album path
+        #[arg(value_name = "JSON_FILE")]
+        r#in: String,
+        /// Root of the generated folder structure
+        #[arg(value_name = "EXPORT_FOLDER")]
+        out: String,
+    },
+    /// Just play generated albums and tracks ~in order~ (hopefully)
+    Play {
+        /// JSON album path
+        #[arg(value_name = "JSON_FILE")]
+        r#in: String,
+    },
 }
 
 fn main() -> Result<()> {
-    // let args = Arguments::parse();
-    let args = Arguments {
-        r#in: r".\json pocs\poc.json".to_string(),
-        out: r".\sound\".to_string(),
-    };
-    let parsed: Root = from_str(read_to_string(args.r#in)?.as_str())?;
-    let mix = parsed.mix()?;
-    play(&mix)?;
-    Ok(())
+    let args = Cli::parse();
+    // let args = Cli {
+    //     r#in: r".\json pocs\poc.json".to_string(),
+    //     out: r".\sound\".to_string(),
+    // };
+    match args.cmd {
+        Command::Save { r#in, out } => {
+            let parsed: Root = from_str(read_to_string(r#in)?.as_str())?;
+            let mix = parsed.mix()?;
+            save(&mix, out)
+        }
+        Command::Play { r#in } => {
+            let parsed: Root = from_str(read_to_string(r#in)?.as_str())?;
+            let mix = parsed.mix()?;
+            play(&mix)
+        }
+    }
 }
 
 // length is inverted?

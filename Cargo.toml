@@ -2,6 +2,7 @@
 name = "bleeperpreter"
 version = "0.2.1"
 edition = "2021"
+about = "An advanced JSON MML interpreter"
 
 [dependencies]
 anyhow = "1.0"

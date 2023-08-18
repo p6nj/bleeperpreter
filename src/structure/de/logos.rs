@@ -1,4 +1,4 @@
-use super::parsing_errors::ParseError;
+use super::de_errors::ParseError;
 use logos::{Lexer, Logos, Skip};
 use std::num::NonZeroU8;
 use text_lines::TextLines as TextPosition;
