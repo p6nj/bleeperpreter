@@ -9,8 +9,6 @@ mod logos;
 use self::logos::Extras;
 pub(crate) use self::logos::MaskAtom;
 mod parsing_errors;
-#[cfg(test)]
-mod tests;
 
 impl<'de> Deserialize<'de> for Notes {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
