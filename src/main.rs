@@ -39,21 +39,12 @@ enum Command {
 
 fn main() -> Result<()> {
     let args = Cli::parse();
-    // let args = Cli {
-    //     r#in: r".\json pocs\poc.json".to_string(),
-    //     out: r".\sound\".to_string(),
-    // };
     match args.cmd {
-        Command::Save { r#in, out } => {
-            let parsed: Root = from_str(read_to_string(r#in)?.as_str())?;
-            let mix = parsed.mix()?;
-            save(&mix, out)
-        }
-        Command::Play { r#in } => {
-            let parsed: Root = from_str(read_to_string(r#in)?.as_str())?;
-            let mix = parsed.mix()?;
-            play(&mix)
-        }
+        Command::Save { r#in, out } => save(
+            from_str::<Root>(read_to_string(r#in)?.as_str())?.mix()?,
+            out,
+        ),
+        Command::Play { r#in } => play(from_str::<Root>(read_to_string(r#in)?.as_str())?.mix()?),
     }
 }
 

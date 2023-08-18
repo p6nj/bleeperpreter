@@ -3,7 +3,7 @@ use anyhow::{Ok, Result};
 use hound::{SampleFormat, WavSpec};
 use std::{fs::create_dir, path::Path};
 
-pub(crate) fn save<P: AsRef<Path>>(mix: &MixedRoot, dir: P) -> Result<()> {
+pub(crate) fn save<P: AsRef<Path>>(mix: MixedRoot, dir: P) -> Result<()> {
     let spec = WavSpec {
         channels: 1,
         sample_rate: SAMPLE_RATE,
