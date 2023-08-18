@@ -1,12 +1,9 @@
-use anyhow::{Context, Ok, Result};
-use core::fmt;
+use anyhow::{Ok, Result};
 use derive_new::new;
 use meval::Expr;
-use serde::de::{Error, Expected, MapAccess, SeqAccess, Visitor};
-use serde::{Deserialize, Deserializer};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::str::FromStr;
 
 pub(crate) use self::parsing::MaskAtom;
 
@@ -25,11 +22,12 @@ pub(crate) struct Album {
 
 #[derive(new, PartialEq, Debug, Deserialize)]
 pub(crate) struct Track {
+    #[serde(rename = "BPM")]
     pub(crate) bpm: u16,
     pub(crate) channels: HashMap<String, Channel>,
 }
 
-#[derive(new, PartialEq, Debug, Deserialize)]
+#[derive(new, PartialEq, Debug)]
 pub(crate) struct Notes {
     pub(crate) set: String,
     pub(crate) score: Mask,
@@ -63,5 +61,5 @@ pub(crate) struct Channel {
     pub(crate) tuning: f32,
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq)]
 pub(crate) struct Mask(pub(crate) Vec<MaskAtom>);

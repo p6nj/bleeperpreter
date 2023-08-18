@@ -9,7 +9,6 @@ clap = { version = "4.3.21", features = ["derive"] }
 derive-new = "0.5.9"
 dirs = "5.0.1"
 hound = "3.5.0"
-json = "0.12.4"
 logos = "0.13.0"
 meval = { version = "0.2.0", features = ["serde"] }
 rayon = "1.7.0"

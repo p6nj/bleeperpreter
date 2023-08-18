@@ -1,12 +1,11 @@
 use super::parsing_errors::ParseError;
 use logos::{Lexer, Logos, Skip};
-use serde::Deserialize;
 use std::num::NonZeroU8;
 use text_lines::TextLines as TextPosition;
 #[cfg(test)]
 mod tests;
 
-#[derive(PartialEq, Debug, Logos, Deserialize)]
+#[derive(PartialEq, Debug, Logos)]
 #[logos(extras = Extras)]
 #[logos(error = ParseError)]
 pub(crate) enum MaskAtom {
