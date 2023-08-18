@@ -6,7 +6,7 @@ mod saving;
 use anyhow::Result;
 use backbone::Root;
 use clap::Parser;
-use saving::save;
+use playing::play;
 use serde_json::from_str;
 use std::fs::read_to_string;
 
@@ -25,7 +25,7 @@ fn main() -> Result<()> {
     };
     let parsed: Root = from_str(read_to_string(args.r#in)?.as_str())?;
     let mix = parsed.mix()?;
-    save(&mix, args.out)?;
+    play(&mix)?;
     Ok(())
 }
 

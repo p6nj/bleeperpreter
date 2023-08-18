@@ -78,7 +78,7 @@ impl backbone::Channel {
         let mut real_length = genlength(4)?;
 
         let gen = self.generator()?;
-        self.notes.score.0.iter().try_for_each(|a| -> Result<()> {
+        self.notes.score.iter().try_for_each(|a| -> Result<()> {
             match *a {
                 MaskAtom::Octave(o) => octave = u8::from(o) - 1,
                 MaskAtom::Length(l) => real_length = genlength(l)?,

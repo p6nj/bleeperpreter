@@ -1,5 +1,3 @@
-use crate::backbone::Mask;
-
 use super::Notes;
 use ::logos::Logos;
 use serde::{
@@ -45,19 +43,17 @@ impl<'de> Deserialize<'de> for Notes {
                 let score_str = seq
                     .next_element()?
                     .ok_or_else(|| Error::invalid_length(1, &self))?;
-                let score = Mask(
-                    MaskAtom::lexer_with_extras(
-                        score_str,
-                        Extras::new(set.clone(), TextLines::new(score_str)),
-                    )
-                    .inspect(|result| {
-                        if let Err(e) = result {
-                            eprintln!("Score syntax error: {:?}", e);
-                        }
-                    })
-                    .flatten()
-                    .collect::<Vec<MaskAtom>>(),
-                );
+                let score = MaskAtom::lexer_with_extras(
+                    score_str,
+                    Extras::new(set.clone(), TextLines::new(score_str)),
+                )
+                .inspect(|result| {
+                    if let Err(e) = result {
+                        eprintln!("Score syntax error: {:?}", e);
+                    }
+                })
+                .flatten()
+                .collect::<Vec<MaskAtom>>();
                 Ok(Self::Value::new(set, score))
             }
 
@@ -80,7 +76,7 @@ impl<'de> Deserialize<'de> for Notes {
                                 return Err(Error::duplicate_field("score"));
                             }
                             let score_str = map.next_value()?;
-                            score = Some(Mask(
+                            score = Some(
                                 MaskAtom::lexer_with_extras(
                                     score_str,
                                     Extras::new(
@@ -108,7 +104,7 @@ impl<'de> Deserialize<'de> for Notes {
                                 })
                                 .flatten()
                                 .collect::<Vec<MaskAtom>>(),
-                            ));
+                            );
                         }
                     }
                 }

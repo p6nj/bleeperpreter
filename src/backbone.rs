@@ -30,7 +30,7 @@ pub(crate) struct Track {
 #[derive(new, PartialEq, Debug)]
 pub(crate) struct Notes {
     pub(crate) set: String,
-    pub(crate) score: Mask,
+    pub(crate) score: Vec<MaskAtom>,
 }
 
 impl Channel {
@@ -60,6 +60,3 @@ pub(crate) struct Channel {
     pub(crate) notes: Notes,
     pub(crate) tuning: f32,
 }
-
-#[derive(Debug, PartialEq)]
-pub(crate) struct Mask(pub(crate) Vec<MaskAtom>);
