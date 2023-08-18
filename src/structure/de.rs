@@ -83,9 +83,8 @@ impl<'de> Deserialize<'de> for Notes {
                                             None => {
                                                 let mut set = None;
                                                 while let Some(key) = map.next_key::<Field>()? {
-                                                    match key {
-                                                        Field::Set => set = Some(map.next_value()?),
-                                                        _ => (),
+                                                    if let Field::Set = key {
+                                                        set = Some(map.next_value()?)
                                                     }
                                                 }
                                                 set
@@ -112,7 +111,7 @@ impl<'de> Deserialize<'de> for Notes {
             }
         }
 
-        const FIELDS: &'static [&'static str] = &["set", "score"];
+        const FIELDS: &[&str] = &["set", "score"];
         deserializer.deserialize_struct("Notes", FIELDS, NotesVisitor)
     }
 }
