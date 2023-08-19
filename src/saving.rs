@@ -1,4 +1,4 @@
-use crate::{processing::MixedRoot, structure::SAMPLE_RATE};
+use crate::{mixing::MixedRoot, structure::SAMPLE_RATE};
 use anyhow::{Ok, Result};
 use hound::{SampleFormat, WavSpec};
 use std::{fs::create_dir, path::Path};
