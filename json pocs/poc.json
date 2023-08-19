@@ -8,14 +8,14 @@
                     "piano": {
                         "signal": "4*abs(f*t-floor(f*t+1/2))-1",
                         "set": "aAbcCdDefFgG",
-                        "score": "@4$6!100 .",
+                        "score": "@4$4!100 .",
                         "tuning": 442
                     },
                     "synth": {
                         "signal": "sin((2*pi*f*t)-sin(2*pi*8*t))",
                         "set": "aAbcCdDefFgG",
                         "tuning": 442,
-                        "score": "@4$6!100 a"
+                        "score": "@4$4!100 a"
                     }
                 }
             }

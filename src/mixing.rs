@@ -11,6 +11,8 @@ type MixedAlbum = (String, HashMap<String, Samples>);
 pub(crate) type MixedRoot = HashMap<String, MixedAlbum>;
 
 mod processing;
+#[cfg(test)]
+mod tests;
 
 impl structure::Root {
     pub(crate) fn mix(mut self) -> Result<MixedRoot> {
