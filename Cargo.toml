@@ -1,6 +1,6 @@
 [package]
-name = "bleeperpreter"
-version = "0.2.1"
+name = "bppt"
+version = "0.2.2"
 edition = "2021"
 about = "An advanced JSON MML interpreter"
 
