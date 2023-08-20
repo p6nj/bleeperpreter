@@ -41,16 +41,12 @@ impl structure::Album {
                             .cloned()
                             .collect::<Vec<Vec<f32>>>();
                         sorted.sort_by(|a, b| a.len().partial_cmp(&b.len()).unwrap());
-                        sorted
-                            .iter()
-                            .cloned()
-                            .reduce(move |acc, v| {
-                                v.iter()
-                                    .zip(acc.iter().chain([0f32].iter().cycle()))
-                                    .map(move |(s, acc)| *s / (track.len() as f32) + acc)
-                                    .collect()
-                            })
-                            .unwrap_or(vec![])
+                        sorted.iter().cloned().fold(vec![], move |acc, v| {
+                            v.iter()
+                                .zip(acc.iter().chain([0f32].iter().cycle()))
+                                .map(move |(s, acc)| *s / (track.len() as f32) + acc)
+                                .collect()
+                        })
                     })
                 })
                 .collect::<HashMap<String, Samples>>(),
