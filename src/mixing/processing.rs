@@ -27,13 +27,16 @@ impl structure::Album {
 
 impl structure::Channel {
     fn process(&mut self, bpm: &u16) -> Result<Samples> {
-        let sr = 48000u32;
+        let sr = 48000;
         let mut octave = 4u8;
         let mut volume = 100u8;
-
         let mut result = vec![];
-        let genlength = move |length: u8| -> Result<usize> {
-            Ok(((((length as u32) * (*bpm as u32) * sr) as f64) / 240f64).round() as usize)
+
+        let mut remainder = 0;
+        let mut genlength = move |length: u8| -> Result<usize> {
+            let val = (length as usize) * (*bpm as usize) * sr + remainder;
+            remainder = val.rem_euclid(240);
+            Ok(val / 240)
         };
         let mut real_length = genlength(4)?;
 

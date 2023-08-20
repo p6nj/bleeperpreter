@@ -1,2 +1,2 @@
 mod maskatom;
-pub(self) use super::MaskAtom;
+use super::MaskAtom;
