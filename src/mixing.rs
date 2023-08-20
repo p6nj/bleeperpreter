@@ -34,21 +34,24 @@ impl structure::Album {
                 .1
                 .iter()
                 .map(|(name, track)| {
-                    (
-                        name.clone(),
-                        track.iter().fold(
-                            Vec::<f32>::with_capacity(track.iter().next().unwrap().1.len()), // unequal channel length bug here
-                            move |acc, (_, samples)| {
-                                samples
-                                    .iter()
-                                    .enumerate()
-                                    .map(|(i, s)| {
-                                        acc.get(i).unwrap_or(&0f32) + (*s / (track.len() as f32))
-                                    })
+                    (name.clone(), {
+                        let mut sorted = track
+                            .iter()
+                            .map(move |(_, s)| s)
+                            .cloned()
+                            .collect::<Vec<Vec<f32>>>();
+                        sorted.sort_by(|a, b| a.len().partial_cmp(&b.len()).unwrap());
+                        sorted
+                            .iter()
+                            .cloned()
+                            .reduce(move |acc, v| {
+                                v.iter()
+                                    .zip(acc.iter().chain([0f32].iter().cycle()))
+                                    .map(move |(s, acc)| *s / (track.len() as f32) + acc)
                                     .collect()
-                            },
-                        ),
-                    )
+                            })
+                            .unwrap_or(vec![])
+                    })
                 })
                 .collect::<HashMap<String, Samples>>(),
         ))
