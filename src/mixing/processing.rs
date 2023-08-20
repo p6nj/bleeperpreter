@@ -27,15 +27,15 @@ impl structure::Album {
 
 impl structure::Channel {
     fn process(&mut self, bpm: &u16) -> Result<Samples> {
-        let sr = 48000;
+        let sr = 48000usize;
         let mut octave = 4u8;
         let mut volume = 100u8;
         let mut result = vec![];
 
         let mut remainder = 0;
         let mut genlength = move |length: u8| -> Result<usize> {
-            let numerator = (*bpm as usize) * sr + remainder;
-            let denominator = 15 * (length as usize);
+            let numerator = 240 * sr + remainder;
+            let denominator = (*bpm as usize) * (length as usize);
             remainder = numerator.rem_euclid(denominator);
             Ok(numerator / denominator)
         };
