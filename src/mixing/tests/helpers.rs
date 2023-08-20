@@ -1,7 +1,7 @@
 use super::*;
 
-pub(super) fn mixed_root_length(bpm: u8, lengths: (u8, u8)) -> Result<usize> {
-    Ok(from_str::<Root>(
+pub(super) fn mixed_root_length(bpm: u8, lengths: (u8, u8)) -> usize {
+    from_str::<Root>(
         format!(
             r#"{{
         "My First Album": {{
@@ -30,12 +30,14 @@ pub(super) fn mixed_root_length(bpm: u8, lengths: (u8, u8)) -> Result<usize> {
             bpm, lengths.0, lengths.1
         )
         .as_str(),
-    )?
-    .mix()?
+    )
+    .unwrap()
+    .mix()
+    .unwrap()
     .get("My First Album")
     .unwrap()
     .1
     .get("My First Song")
     .unwrap()
-    .len())
+    .len()
 }
