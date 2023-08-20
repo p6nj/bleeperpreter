@@ -48,7 +48,6 @@ fn main() -> Result<()> {
     }
 }
 
-// length is inverted?
 // note loss!!
 
 /* Help for expressions:

@@ -34,9 +34,10 @@ impl structure::Channel {
 
         let mut remainder = 0;
         let mut genlength = move |length: u8| -> Result<usize> {
-            let val = (length as usize) * (*bpm as usize) * sr + remainder;
-            remainder = val.rem_euclid(240);
-            Ok(val / 240)
+            let numerator = (*bpm as usize) * sr + remainder;
+            let denominator = 15 * (length as usize);
+            remainder = numerator.rem_euclid(denominator);
+            Ok(numerator / denominator)
         };
         let mut real_length = genlength(4)?;
 

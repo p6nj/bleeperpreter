@@ -45,5 +45,5 @@ fn mixed_root_length(bpm: u8, lengths: (u8, u8)) -> Result<usize> {
 #[test]
 fn note_length() {
     assert_eq!(48_000, mixed_root_length(60, (4, 4)).unwrap());
-    // assert!((47_999 * 2 - 1..=48_000 * 2).contains(&dbg!(mixed_root_length(60, (2, 2)).unwrap())));
+    assert_eq!(48_000 * 2, mixed_root_length(60, (2, 2)).unwrap());
 }
