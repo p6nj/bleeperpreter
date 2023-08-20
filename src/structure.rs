@@ -44,7 +44,7 @@ impl Channel {
             move |len: usize, n: u8, octave: u8, volume: u8| -> Vec<f32> {
                 let f = (tuning as f64 / 16f64)
                     * 2.0_f64.powf(((notes * octave + n) as f64) / (notes as f64));
-                (1..len)
+                (1..=len)
                     .map(|i| {
                         let t = (i as f64) / (SAMPLE_RATE as f64);
                         (func(t, f) * ((volume as f64) / 100f64)) as f32
