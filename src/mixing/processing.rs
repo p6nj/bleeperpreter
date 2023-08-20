@@ -33,10 +33,7 @@ impl structure::Channel {
 
         let mut result = vec![];
         let genlength = move |length: u8| -> Result<usize> {
-            Ok(
-                ((((((length as u16) * bpm) as f64) / 240f64) * (sr as f64)).trunc() as u32)
-                    .try_into()?,
-            )
+            Ok(((((length as u32) * (*bpm as u32) * sr) as f64) / 240f64).round() as usize)
         };
         let mut real_length = genlength(4)?;
 

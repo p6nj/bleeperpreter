@@ -37,7 +37,7 @@ impl structure::Album {
                     (
                         name.clone(),
                         track.iter().fold(
-                            Vec::<f32>::with_capacity(track.iter().next().unwrap().1.len()),
+                            Vec::<f32>::with_capacity(track.iter().next().unwrap().1.len()), // unequal channel length bug here
                             move |acc, (_, samples)| {
                                 samples
                                     .iter()
