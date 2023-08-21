@@ -43,6 +43,7 @@ impl structure::Channel {
         let mut real_length = genlength(4)?;
 
         let gen = self.generator()?;
+        // smth needs to get rid of loops and tuplets here
         self.notes.score.iter().try_for_each(|a| -> Result<()> {
             match *a {
                 MaskAtom::Octave(o) => octave = u8::from(o) - 1,
@@ -65,6 +66,7 @@ impl structure::Channel {
                     length /= 2;
                     real_length = genlength(length)?;
                 }
+                _ => unreachable!("Tuplets and loops should be gone by now"),
             };
             Ok(())
         })?;

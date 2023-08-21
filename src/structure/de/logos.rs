@@ -32,6 +32,10 @@ pub(crate) enum MaskAtom {
     VolumeIncr,
     #[token("_")]
     VolumeDecr,
+    #[regex(r"\([\s\S]*\)", wrapped)]
+    Loop(Vec<MaskAtom>),
+    #[regex(r"\[[\s\S]*\]", wrapped)]
+    Tuplet(Vec<MaskAtom>),
 }
 
 pub(crate) struct Extras {
@@ -98,4 +102,29 @@ fn note(lex: &mut Lexer<MaskAtom>) -> Result<u8, ParseError> {
         .notes
         .find(lex.slice().chars().next().unwrap())
         .ok_or(ParseError::new("Unkown note".to_string(), at(lex)))? as u8)
+}
+
+fn wrapped(lex: &mut Lexer<MaskAtom>) -> Vec<MaskAtom> {
+    let source = &lex.slice()[1..lex.slice().len()];
+    let result = MaskAtom::lexer_with_extras(
+        &source,
+        Extras::new(lex.extras.notes.clone(), TextPosition::new(&source)),
+    )
+    .into_iter()
+    .inspect(|result| {
+        if let Err(e) = result {
+            let updated_error = ParseError {
+                at: {
+                    let current = at(lex);
+                    (e.at.0 + current.0, e.at.1 + current.1)
+                },
+                ..e.clone()
+            };
+            eprintln!("Score syntax error: {:?}", updated_error);
+        }
+    })
+    .flatten()
+    .collect::<Vec<MaskAtom>>();
+    increment(lex);
+    result
 }

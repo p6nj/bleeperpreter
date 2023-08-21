@@ -3,8 +3,8 @@ use std::fmt::Debug;
 
 #[derive(Clone, PartialEq, new)]
 pub(crate) struct ParseError {
-    msg: String,
-    at: (usize, usize),
+    pub(crate) msg: String,
+    pub(crate) at: (usize, usize),
 }
 
 impl Debug for ParseError {

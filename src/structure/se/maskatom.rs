@@ -14,6 +14,18 @@ impl MaskAtom {
             Self::VolumeDecr => "_".to_string(),
             Self::LengthIncr => "\\".to_string(),
             Self::LengthDecr => "/".to_string(),
+            Self::Loop(v) => format!(
+                "({})",
+                v.iter()
+                    .map(|atom| atom.serialize(notes))
+                    .collect::<String>()
+            ),
+            Self::Tuplet(v) => format!(
+                "[{}]",
+                v.iter()
+                    .map(|atom| atom.serialize(notes))
+                    .collect::<String>()
+            ),
         }
     }
 }
