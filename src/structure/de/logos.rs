@@ -5,7 +5,7 @@ use text_lines::TextLines as TextPosition;
 #[cfg(test)]
 mod tests;
 
-#[derive(PartialEq, Debug, Logos)]
+#[derive(PartialEq, Debug, Logos, Clone)]
 #[logos(extras = Extras)]
 #[logos(error = ParseError)]
 pub(crate) enum MaskAtom {

@@ -1,11 +1,13 @@
 use super::*;
+use std::collections::VecDeque;
+mod context;
 
 impl structure::Track {
     fn process(&mut self) -> Result<Track> {
         self.channels
             .par_iter_mut()
             .map(|(name, channel)| -> Result<(String, Samples)> {
-                Ok((name.clone(), channel.process(&self.bpm)?))
+                Ok((name.clone(), channel.process(self.bpm)?))
             })
             .collect::<Result<Track>>()
     }
@@ -26,50 +28,19 @@ impl structure::Album {
 }
 
 impl structure::Channel {
-    fn process(&mut self, bpm: &u16) -> Result<Samples> {
-        let sr = 48000usize;
-        let mut octave = 4u8;
-        let mut length = 4u8;
-        let mut volume = 100u8;
-        let mut result = vec![];
-
-        let mut remainder = 0;
-        let mut genlength = move |length: u8| -> Result<usize> {
-            let numerator = 240 * sr + remainder;
-            let denominator = (*bpm as usize) * (length as usize);
-            remainder = numerator.rem_euclid(denominator);
-            Ok(numerator / denominator)
-        };
-        let mut real_length = genlength(4)?;
-
-        let gen = self.generator()?;
-        // smth needs to get rid of loops and tuplets here
-        self.notes.score.iter().try_for_each(|a| -> Result<()> {
-            match *a {
-                MaskAtom::Octave(o) => octave = u8::from(o) - 1,
-                MaskAtom::Length(l) => {
-                    real_length = genlength(l)?;
-                    length = l;
-                }
-                MaskAtom::Volume(v) => volume = v,
-                MaskAtom::Note(n) => result.append(&mut gen(real_length, n, octave, volume)),
-                MaskAtom::Rest => result.append(&mut vec![0f32; real_length]),
-                MaskAtom::OctaveIncr => octave += 1,
-                MaskAtom::OctaveDecr => octave -= 1,
-                MaskAtom::VolumeIncr => volume += 1,
-                MaskAtom::VolumeDecr => volume -= 1,
-                MaskAtom::LengthIncr => {
-                    length *= 2;
-                    real_length = genlength(length)?;
-                }
-                MaskAtom::LengthDecr => {
-                    length /= 2;
-                    real_length = genlength(length)?;
-                }
-                _ => unreachable!("Tuplets and loops should be gone by now"),
-            };
-            Ok(())
-        })?;
-        Ok(result)
+    fn process(&mut self, bpm: u16) -> Result<Samples> {
+        Ok(Context::new(bpm, self)?.flatten().collect())
     }
+}
+
+struct Context {
+    bpm: u16,
+    octave: u8,
+    length: u8,
+    volume: u8,
+    tuplet: usize,
+    counter: VecDeque<(usize, usize)>,
+    remainder: usize,
+    score: Vec<MaskAtom>,
+    generator: Box<dyn Fn(usize, u8, u8, u8) -> Vec<f32>>,
 }
