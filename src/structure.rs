@@ -8,8 +8,6 @@ use std::fmt::Debug;
 pub(crate) use self::de::MaskAtom;
 
 mod de;
-#[allow(dead_code)]
-mod se;
 
 pub(crate) const SAMPLE_RATE: u32 = 48000;
 

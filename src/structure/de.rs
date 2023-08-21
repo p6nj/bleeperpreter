@@ -1,14 +1,11 @@
 use super::Notes;
-use ::logos::Logos;
 use serde::{
     de::{Error, MapAccess, SeqAccess, Visitor},
     Deserialize, Deserializer,
 };
 use text_lines::TextLines;
-mod logos;
-use self::logos::Extras;
-pub(crate) use self::logos::MaskAtom;
-mod de_errors;
+mod atoms;
+pub(crate) use self::atoms::MaskAtom;
 
 impl<'de> Deserialize<'de> for Notes {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -41,17 +38,8 @@ impl<'de> Deserialize<'de> for Notes {
                 let score_str = seq
                     .next_element()?
                     .ok_or_else(|| Error::invalid_length(1, &self))?;
-                let score = MaskAtom::lexer_with_extras(
-                    score_str,
-                    Extras::new(set.clone(), TextLines::new(score_str)),
-                )
-                .inspect(|result| {
-                    if let Err(e) = result {
-                        eprintln!("Score syntax error: {:?}", e);
-                    }
-                })
-                .flatten()
-                .collect::<Vec<MaskAtom>>();
+                let score = MaskAtom::parse(score_str, &set)
+                    .map_err(|err| Error::custom(format!("Syntax error: {}", err.to_string())))?;
                 Ok(Self::Value::new(set, score))
             }
 
@@ -59,7 +47,7 @@ impl<'de> Deserialize<'de> for Notes {
             where
                 V: MapAccess<'de>,
             {
-                let mut set = None;
+                let mut set: Option<String> = None;
                 let mut score = None;
                 while let Some(key) = map.next_key()? {
                     match key {
@@ -75,32 +63,25 @@ impl<'de> Deserialize<'de> for Notes {
                             }
                             let score_str = map.next_value()?;
                             score = Some(
-                                MaskAtom::lexer_with_extras(
+                                MaskAtom::parse(
                                     score_str,
-                                    Extras::new(
-                                        match set.clone() {
-                                            Some(s) => s,
-                                            None => {
-                                                let mut set = None;
-                                                while let Some(key) = map.next_key::<Field>()? {
-                                                    if let Field::Set = key {
-                                                        set = Some(map.next_value()?)
-                                                    }
+                                    match set.clone() {
+                                        Some(s) => &s,
+                                        None => {
+                                            let mut set = None;
+                                            while let Some(key) = map.next_key::<Field>()? {
+                                                if let Field::Set = key {
+                                                    set = Some(map.next_value()?)
                                                 }
-                                                set
                                             }
-                                            .ok_or_else(|| Error::missing_field("set"))?,
-                                        },
-                                        TextLines::new(score_str),
-                                    ),
+                                            set
+                                        }
+                                        .ok_or_else(|| Error::missing_field("set"))?,
+                                    },
                                 )
-                                .inspect(|result| {
-                                    if let Err(e) = result {
-                                        eprintln!("Score syntax error: {:?}", e);
-                                    }
-                                })
-                                .flatten()
-                                .collect::<Vec<MaskAtom>>(),
+                                .map_err(|err| {
+                                    Error::custom(format!("Syntax error: {}", err.to_string()))
+                                })?,
                             );
                         }
                     }
