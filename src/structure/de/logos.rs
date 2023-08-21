@@ -20,6 +20,18 @@ pub(crate) enum MaskAtom {
     #[token(".")]
     #[regex(r"[ \t\n\f\r]+", junk)]
     Rest,
+    #[token(">")]
+    OctaveIncr,
+    #[token("<")]
+    OctaveDecr,
+    #[token("\\")]
+    LengthIncr,
+    #[token("/")]
+    LengthDecr,
+    #[token("^")]
+    VolumeIncr,
+    #[token("_")]
+    VolumeDecr,
 }
 
 pub(crate) struct Extras {

@@ -8,6 +8,12 @@ impl MaskAtom {
             Self::Volume(n) => format!("!{n}"),
             Self::Note(n) => (notes.as_bytes()[*n as usize] as char).into(),
             Self::Rest => '.'.to_string(),
+            Self::OctaveIncr => "<".to_string(),
+            Self::OctaveDecr => ">".to_string(),
+            Self::VolumeIncr => "^".to_string(),
+            Self::VolumeDecr => "_".to_string(),
+            Self::LengthIncr => "\\".to_string(),
+            Self::LengthDecr => "/".to_string(),
         }
     }
 }

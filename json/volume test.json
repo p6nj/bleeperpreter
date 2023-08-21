@@ -8,7 +8,7 @@
                     "piano": {
                         "signal": "sin(2*pi*f*t)",
                         "set": "aAbcCdDefFgG",
-                        "score": "@4$4!0 c!10c!50c!100c",
+                        "score": "$16!0 c^c^c^c^c^c^c^c^c^c^c^c^c^c^c^c^c^c^c^c^c^c^c^c^ !100 c<c>c<c>c<c",
                         "tuning": 442
                     }
                 }

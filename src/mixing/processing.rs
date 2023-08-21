@@ -29,6 +29,7 @@ impl structure::Channel {
     fn process(&mut self, bpm: &u16) -> Result<Samples> {
         let sr = 48000usize;
         let mut octave = 4u8;
+        let mut length = 4u8;
         let mut volume = 100u8;
         let mut result = vec![];
 
@@ -45,10 +46,25 @@ impl structure::Channel {
         self.notes.score.iter().try_for_each(|a| -> Result<()> {
             match *a {
                 MaskAtom::Octave(o) => octave = u8::from(o) - 1,
-                MaskAtom::Length(l) => real_length = genlength(l)?,
+                MaskAtom::Length(l) => {
+                    real_length = genlength(l)?;
+                    length = l;
+                }
                 MaskAtom::Volume(v) => volume = v,
                 MaskAtom::Note(n) => result.append(&mut gen(real_length, n, octave, volume)),
                 MaskAtom::Rest => result.append(&mut vec![0f32; real_length]),
+                MaskAtom::OctaveIncr => octave += 1,
+                MaskAtom::OctaveDecr => octave -= 1,
+                MaskAtom::VolumeIncr => volume += 1,
+                MaskAtom::VolumeDecr => volume -= 1,
+                MaskAtom::LengthIncr => {
+                    length *= 2;
+                    real_length = genlength(length)?;
+                }
+                MaskAtom::LengthDecr => {
+                    length /= 2;
+                    real_length = genlength(length)?;
+                }
             };
             Ok(())
         })?;
