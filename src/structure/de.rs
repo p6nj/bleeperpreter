@@ -3,7 +3,7 @@ use serde::{
     de::{Error, MapAccess, SeqAccess, Visitor},
     Deserialize, Deserializer,
 };
-use text_lines::TextLines;
+
 mod atoms;
 pub(crate) use self::atoms::MaskAtom;
 

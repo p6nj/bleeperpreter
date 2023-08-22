@@ -7,7 +7,7 @@ use nom::multi::many0;
 use nom::sequence::preceded;
 use nom::{Err, IResult};
 use std::num::NonZeroU8;
-use text_lines::TextLines as TextPosition;
+
 
 #[cfg(test)]
 mod tests;
@@ -30,21 +30,21 @@ pub(crate) enum MaskAtom {
 type R = Result<MaskAtom, ErrorKind>;
 type LeResult<'a> = IResult<&'a str, MaskAtom>;
 
-fn octave<'a>(i: &'a str) -> IResult<&'a str, MaskAtom> {
+fn octave(i: &str) -> IResult<&str, MaskAtom> {
     map_res(
         map_opt(
             verify(preceded(char('@'), u8), |n| NonZeroU8::new(*n).is_some()),
-            move |n| NonZeroU8::new(n),
+            NonZeroU8::new,
         ),
         |n| R::Ok(MaskAtom::Octave(n)),
     )(i)
 }
 
-fn length<'a>(i: &'a str) -> IResult<&'a str, MaskAtom> {
+fn length(i: &str) -> IResult<&str, MaskAtom> {
     map_res(preceded(char('$'), u8), move |n| R::Ok(MaskAtom::Length(n)))(i)
 }
 
-fn volume<'a>(i: &'a str) -> IResult<&'a str, MaskAtom> {
+fn volume(i: &str) -> IResult<&str, MaskAtom> {
     map_res(preceded(char('!'), u8), move |n| R::Ok(MaskAtom::Volume(n)))(i)
 }
 
@@ -54,35 +54,35 @@ fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom>
     })
 }
 
-fn rest<'a>(i: &'a str) -> LeResult {
+fn rest(i: &str) -> LeResult {
     value(MaskAtom::Rest, char('.'))(i)
 }
 
-fn octaveincr<'a>(i: &'a str) -> LeResult {
+fn octaveincr(i: &str) -> LeResult {
     value(MaskAtom::OctaveIncr, char('>'))(i)
 }
 
-fn octavedecr<'a>(i: &'a str) -> LeResult {
+fn octavedecr(i: &str) -> LeResult {
     value(MaskAtom::OctaveDecr, char('<'))(i)
 }
 
-fn lengthincr<'a>(i: &'a str) -> LeResult {
+fn lengthincr(i: &str) -> LeResult {
     value(MaskAtom::LengthIncr, char('\\'))(i)
 }
 
-fn lengthdecr<'a>(i: &'a str) -> LeResult {
+fn lengthdecr(i: &str) -> LeResult {
     value(MaskAtom::LengthDecr, char('/'))(i)
 }
 
-fn volumeincr<'a>(i: &'a str) -> LeResult {
+fn volumeincr(i: &str) -> LeResult {
     value(MaskAtom::VolumeIncr, char('^'))(i)
 }
 
-fn volumedecr<'a>(i: &'a str) -> LeResult {
+fn volumedecr(i: &str) -> LeResult {
     value(MaskAtom::VolumeDecr, char('_'))(i)
 }
 
-fn junk<'a>(i: &'a str) -> IResult<&'a str, ()> {
+fn junk(i: &str) -> IResult<&str, ()> {
     value((), multispace0)(i)
 }
 
