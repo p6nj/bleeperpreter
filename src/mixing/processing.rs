@@ -28,7 +28,7 @@ impl structure::Album {
 
 impl structure::Channel {
     fn process(&mut self, bpm: u16) -> Result<Samples> {
-        Ok(Context::new(bpm, self)?.flatten().collect())
+        Ok(Context::new(bpm).parse(&self, self.generator()?))
     }
 }
 
@@ -38,6 +38,4 @@ struct Context {
     length: u8,
     volume: u8,
     remainder: usize,
-    score: Vec<MaskAtom>,
-    generator: Box<dyn Fn(usize, u8, u8, u8) -> Vec<f32>>,
 }
