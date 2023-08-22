@@ -1,13 +1,12 @@
 use nom::branch::alt;
+use nom::character::complete::u8;
 use nom::character::complete::{char, multispace0, one_of};
-use nom::character::streaming::u8;
 use nom::combinator::{map_opt, map_res, value, verify};
 use nom::error::{Error, ErrorKind};
 use nom::multi::many0;
 use nom::sequence::preceded;
 use nom::{Err, IResult};
 use std::num::NonZeroU8;
-
 
 #[cfg(test)]
 mod tests;
