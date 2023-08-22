@@ -23,7 +23,7 @@ const VOLUMEINCR: char = '^';
 const VOLUMEDECR: char = '_';
 
 #[derive(PartialEq, Debug, Clone)]
-pub(crate) enum MaskAtom {
+pub(crate) enum Atom {
     Octave(NonZeroU8),
     Length(u8),
     Volume(u8),
@@ -37,70 +37,66 @@ pub(crate) enum MaskAtom {
     VolumeDecr,
 }
 
-type R = Result<MaskAtom, ErrorKind>;
-type LeResult<'a> = IResult<&'a str, MaskAtom>;
+type R = Result<Atom, ErrorKind>;
+type LeResult<'a> = IResult<&'a str, Atom>;
 
-fn octave(i: &str) -> IResult<&str, MaskAtom> {
+fn octave(i: &str) -> IResult<&str, Atom> {
     map_res(
         map_opt(
             verify(preceded(char(OCTAVE), u8), |n| NonZeroU8::new(*n).is_some()),
             NonZeroU8::new,
         ),
-        |n| R::Ok(MaskAtom::Octave(n)),
+        |n| R::Ok(Atom::Octave(n)),
     )(i)
 }
 
-fn length(i: &str) -> IResult<&str, MaskAtom> {
-    map_res(preceded(char(LENGTH), u8), move |n| {
-        R::Ok(MaskAtom::Length(n))
-    })(i)
+fn length(i: &str) -> IResult<&str, Atom> {
+    map_res(preceded(char(LENGTH), u8), move |n| R::Ok(Atom::Length(n)))(i)
 }
 
-fn volume(i: &str) -> IResult<&str, MaskAtom> {
-    map_res(preceded(char(VOLUME), u8), move |n| {
-        R::Ok(MaskAtom::Volume(n))
-    })(i)
+fn volume(i: &str) -> IResult<&str, Atom> {
+    map_res(preceded(char(VOLUME), u8), move |n| R::Ok(Atom::Volume(n)))(i)
 }
 
-fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> {
+fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, Atom> {
     map_res(one_of(notes), move |c| {
-        R::Ok(MaskAtom::Note(notes.find(c).unwrap() as u8))
+        R::Ok(Atom::Note(notes.find(c).unwrap() as u8))
     })
 }
 
 fn rest(i: &str) -> LeResult {
-    value(MaskAtom::Rest, char(REST))(i)
+    value(Atom::Rest, char(REST))(i)
 }
 
 fn octaveincr(i: &str) -> LeResult {
-    value(MaskAtom::OctaveIncr, char(OCTAVEINCR))(i)
+    value(Atom::OctaveIncr, char(OCTAVEINCR))(i)
 }
 
 fn octavedecr(i: &str) -> LeResult {
-    value(MaskAtom::OctaveDecr, char(OCTAVEDECR))(i)
+    value(Atom::OctaveDecr, char(OCTAVEDECR))(i)
 }
 
 fn lengthincr(i: &str) -> LeResult {
-    value(MaskAtom::LengthIncr, char(LENGTHINCR))(i)
+    value(Atom::LengthIncr, char(LENGTHINCR))(i)
 }
 
 fn lengthdecr(i: &str) -> LeResult {
-    value(MaskAtom::LengthDecr, char(LENGTHDECR))(i)
+    value(Atom::LengthDecr, char(LENGTHDECR))(i)
 }
 
 fn volumeincr(i: &str) -> LeResult {
-    value(MaskAtom::VolumeIncr, char(VOLUMEINCR))(i)
+    value(Atom::VolumeIncr, char(VOLUMEINCR))(i)
 }
 
 fn volumedecr(i: &str) -> LeResult {
-    value(MaskAtom::VolumeDecr, char(VOLUMEDECR))(i)
+    value(Atom::VolumeDecr, char(VOLUMEDECR))(i)
 }
 
 fn junk(i: &str) -> IResult<&str, ()> {
     value((), multispace0)(i)
 }
 
-fn atom<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAtom> + 'a {
+fn atom<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, Atom> + 'a {
     preceded(
         junk,
         alt((
@@ -119,11 +115,11 @@ fn atom<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, MaskAto
     )
 }
 
-impl MaskAtom {
+impl Atom {
     pub(crate) fn parse<'a>(
         input: &'a str,
         noteset: &'a str,
-    ) -> Result<Vec<MaskAtom>, Err<Error<&'a str>>> {
+    ) -> Result<Vec<Atom>, Err<Error<&'a str>>> {
         Ok(many0(atom(noteset))(input)?.1)
     }
 }

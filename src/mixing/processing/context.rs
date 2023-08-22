@@ -30,23 +30,23 @@ impl Context {
             .iter()
             .map(|atom| {
                 match atom {
-                    MaskAtom::Octave(o) => self.octave = u8::from(*o) - 1,
-                    MaskAtom::Length(l) => {
+                    Atom::Octave(o) => self.octave = u8::from(*o) - 1,
+                    Atom::Length(l) => {
                         self.length = *l;
                     }
-                    MaskAtom::Volume(v) => self.volume = *v,
-                    MaskAtom::Note(n) => {
+                    Atom::Volume(v) => self.volume = *v,
+                    Atom::Note(n) => {
                         return Some(gen(self.real_length(), *n, self.octave, self.volume));
                     }
-                    MaskAtom::Rest => return Some(vec![0f32; self.real_length()]),
-                    MaskAtom::OctaveIncr => self.octave += 1,
-                    MaskAtom::OctaveDecr => self.octave -= 1,
-                    MaskAtom::VolumeIncr => self.volume += 1,
-                    MaskAtom::VolumeDecr => self.volume -= 1,
-                    MaskAtom::LengthIncr => {
+                    Atom::Rest => return Some(vec![0f32; self.real_length()]),
+                    Atom::OctaveIncr => self.octave += 1,
+                    Atom::OctaveDecr => self.octave -= 1,
+                    Atom::VolumeIncr => self.volume += 1,
+                    Atom::VolumeDecr => self.volume -= 1,
+                    Atom::LengthIncr => {
                         self.length *= 2;
                     }
-                    MaskAtom::LengthDecr => {
+                    Atom::LengthDecr => {
                         self.length /= 2;
                     }
                 };

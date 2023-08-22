@@ -5,7 +5,7 @@ use serde::{
 };
 
 mod atoms;
-pub(crate) use self::atoms::MaskAtom;
+pub(crate) use self::atoms::Atom;
 
 impl<'de> Deserialize<'de> for Notes {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -38,7 +38,7 @@ impl<'de> Deserialize<'de> for Notes {
                 let score_str = seq
                     .next_element()?
                     .ok_or_else(|| Error::invalid_length(1, &self))?;
-                let score = MaskAtom::parse(score_str, &set)
+                let score = Atom::parse(score_str, &set)
                     .map_err(|err| Error::custom(format!("Syntax error: {}", err.to_string())))?;
                 Ok(Self::Value::new(set, score))
             }
@@ -63,7 +63,7 @@ impl<'de> Deserialize<'de> for Notes {
                             }
                             let score_str = map.next_value()?;
                             score = Some(
-                                MaskAtom::parse(
+                                Atom::parse(
                                     score_str,
                                     match set.clone() {
                                         Some(s) => s,

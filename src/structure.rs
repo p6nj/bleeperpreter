@@ -5,7 +5,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
-pub(crate) use self::de::MaskAtom;
+pub(crate) use self::de::Atom;
 
 mod de;
 
@@ -30,7 +30,7 @@ pub(crate) struct Track {
 #[derive(new, PartialEq, Debug)]
 pub(crate) struct Notes {
     pub(crate) set: String,
-    pub(crate) score: Vec<MaskAtom>,
+    pub(crate) score: Vec<Atom>,
 }
 
 impl Channel {

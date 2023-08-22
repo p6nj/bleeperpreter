@@ -1,4 +1,4 @@
-use crate::structure::{self, MaskAtom};
+use crate::structure::{self, Atom};
 use anyhow::Result;
 use rayon::prelude::{IntoParallelRefMutIterator, ParallelIterator};
 use std::collections::HashMap;
