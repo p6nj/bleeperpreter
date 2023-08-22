@@ -9,7 +9,7 @@ fn octave() {
 #[test]
 fn length() {
     assert_eq!(
-        Ok(("", Atom::Length(4))),
+        Ok(("", Atom::Length(std::num::NonZeroU8::new(4).unwrap()))),
         super::length(format!("{LENGTH}4").as_str())
     );
 }
@@ -22,7 +22,10 @@ fn volume() {
 }
 #[test]
 fn note() {
-    assert_eq!(Ok(("", Atom::Note(2))), super::note("abcde")("c"));
+    assert_eq!(
+        Ok(("", Atom::Note(2, NonZeroUsize::new(1).unwrap()))),
+        super::note("abcde")("c")
+    );
 }
 #[test]
 fn rest() {

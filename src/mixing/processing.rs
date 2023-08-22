@@ -1,5 +1,7 @@
+use std::num::{NonZeroU16, NonZeroU8, NonZeroUsize};
+
 use super::*;
-mod context;
+mod decoder;
 
 impl structure::Track {
     fn process(&mut self) -> Result<Track> {
@@ -27,15 +29,16 @@ impl structure::Album {
 }
 
 impl structure::Channel {
-    fn process(&mut self, bpm: u16) -> Result<Samples> {
-        Ok(Context::new(bpm).parse(&self, self.generator()?))
+    fn process(&mut self, bpm: NonZeroU16) -> Result<Samples> {
+        Ok(Decoder::new(bpm).decode(&self, self.generator()?)?)
     }
 }
 
-struct Context {
-    bpm: u16,
+struct Decoder {
+    bpm: NonZeroU16,
     octave: u8,
-    length: u8,
+    length: NonZeroU8,
     volume: u8,
     remainder: usize,
+    tup: NonZeroUsize,
 }

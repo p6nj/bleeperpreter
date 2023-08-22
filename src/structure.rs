@@ -4,6 +4,7 @@ use meval::Expr;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::num::{NonZeroU16, NonZeroUsize};
 
 pub(crate) use self::de::Atom;
 
@@ -23,7 +24,7 @@ pub(crate) struct Album {
 #[derive(new, PartialEq, Debug, Deserialize)]
 pub(crate) struct Track {
     #[serde(rename = "BPM")]
-    pub(crate) bpm: u16,
+    pub(crate) bpm: NonZeroU16,
     pub(crate) channels: HashMap<String, Channel>,
 }
 
@@ -34,15 +35,15 @@ pub(crate) struct Notes {
 }
 
 impl Channel {
-    pub(crate) fn generator(&self) -> Result<impl Fn(usize, u8, u8, u8) -> Vec<f32>> {
+    pub(crate) fn generator(&self) -> Result<impl Fn(NonZeroUsize, u8, u8, u8) -> Vec<f32>> {
         let func = self.signal.clone().bind2("t", "f")?;
         let notes = self.notes.set.len() as u8;
         let tuning = self.tuning;
         Ok(
-            move |len: usize, n: u8, octave: u8, volume: u8| -> Vec<f32> {
+            move |len: NonZeroUsize, n: u8, octave: u8, volume: u8| -> Vec<f32> {
                 let f = (tuning as f64 / 16f64)
                     * 2.0_f64.powf(((notes * octave + n) as f64) / (notes as f64));
-                (1..=len)
+                (1..=usize::from(len))
                     .map(|i| {
                         let t = (i as f64) / (SAMPLE_RATE as f64);
                         (func(t, f) * ((volume as f64) / 100f64)) as f32

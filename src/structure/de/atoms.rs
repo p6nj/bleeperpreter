@@ -6,7 +6,7 @@ use nom::error::{Error, ErrorKind};
 use nom::multi::many0;
 use nom::sequence::preceded;
 use nom::{Err, IResult};
-use std::num::NonZeroU8;
+use std::num::{NonZeroU8, NonZeroUsize};
 
 #[cfg(test)]
 mod tests;
@@ -25,9 +25,9 @@ const VOLUMEDECR: char = '_';
 #[derive(PartialEq, Debug, Clone)]
 pub(crate) enum Atom {
     Octave(NonZeroU8),
-    Length(u8),
+    Length(NonZeroU8),
     Volume(u8),
-    Note(u8),
+    Note(u8, NonZeroUsize),
     Rest,
     OctaveIncr,
     OctaveDecr,
@@ -51,7 +51,13 @@ fn octave(i: &str) -> IResult<&str, Atom> {
 }
 
 fn length(i: &str) -> IResult<&str, Atom> {
-    map_res(preceded(char(LENGTH), u8), move |n| R::Ok(Atom::Length(n)))(i)
+    map_res(
+        map_opt(
+            verify(preceded(char(LENGTH), u8), |n| NonZeroU8::new(*n).is_some()),
+            NonZeroU8::new,
+        ),
+        |n| R::Ok(Atom::Length(n)),
+    )(i)
 }
 
 fn volume(i: &str) -> IResult<&str, Atom> {
@@ -60,7 +66,10 @@ fn volume(i: &str) -> IResult<&str, Atom> {
 
 fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, Atom> {
     map_res(one_of(notes), move |c| {
-        R::Ok(Atom::Note(notes.find(c).unwrap() as u8))
+        R::Ok(Atom::Note(
+            notes.find(c).unwrap() as u8,
+            NonZeroUsize::new(1).unwrap(),
+        ))
     })
 }
 
