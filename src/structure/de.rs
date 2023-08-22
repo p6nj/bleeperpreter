@@ -66,9 +66,9 @@ impl<'de> Deserialize<'de> for Notes {
                                 MaskAtom::parse(
                                     score_str,
                                     match set.clone() {
-                                        Some(s) => &s,
+                                        Some(s) => s,
                                         None => {
-                                            let mut set = None;
+                                            let mut set: Option<String> = None;
                                             while let Some(key) = map.next_key::<Field>()? {
                                                 if let Field::Set = key {
                                                     set = Some(map.next_value()?)
@@ -77,7 +77,8 @@ impl<'de> Deserialize<'de> for Notes {
                                             set
                                         }
                                         .ok_or_else(|| Error::missing_field("set"))?,
-                                    },
+                                    }
+                                    .as_str(),
                                 )
                                 .map_err(|err| {
                                     Error::custom(format!("Syntax error: {}", err.to_string()))

@@ -7,11 +7,9 @@ impl Context {
             octave: 4,
             length: 4,
             volume: 100,
-            tuplet: 1,
-            counter: vec![].into(),
-            remainder: 0,
             generator: Box::new(channel.generator()?),
             score: channel.notes.score.iter().rev().cloned().collect(),
+            remainder: 0,
         })
     }
     fn real_length(&mut self) -> usize {
@@ -24,22 +22,12 @@ impl Context {
         let real = self.real_length();
         (self.generator)(real, n, self.octave, self.volume)
     }
-    fn step(&mut self) {
-        if let Some((tuplet, countdown)) = self.counter.pop_front() {
-            if countdown > 0 {
-                self.counter.insert(0, (tuplet, countdown - 1));
-            } else {
-                self.tuplet /= tuplet
-            }
-        }
-    }
 }
 
 impl Iterator for Context {
     type Item = Vec<f32>;
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(atom) = self.score.pop() {
-            self.step();
             match atom {
                 MaskAtom::Octave(o) => self.octave = u8::from(o) - 1,
                 MaskAtom::Length(l) => {
@@ -59,13 +47,6 @@ impl Iterator for Context {
                 }
                 MaskAtom::LengthDecr => {
                     self.length /= 2;
-                }
-                MaskAtom::Loop(v) => self
-                    .score
-                    .append(&mut v.iter().rev().cloned().cycle().take(v.len() * 2).collect()),
-                MaskAtom::Tuplet(v) => {
-                    self.tuplet *= v.len();
-                    self.score.append(&mut v.iter().rev().cloned().collect());
                 }
             }
         }

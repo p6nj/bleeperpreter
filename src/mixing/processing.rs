@@ -1,5 +1,4 @@
 use super::*;
-use std::collections::VecDeque;
 mod context;
 
 impl structure::Track {
@@ -38,8 +37,6 @@ struct Context {
     octave: u8,
     length: u8,
     volume: u8,
-    tuplet: usize,
-    counter: VecDeque<(usize, usize)>,
     remainder: usize,
     score: Vec<MaskAtom>,
     generator: Box<dyn Fn(usize, u8, u8, u8) -> Vec<f32>>,
