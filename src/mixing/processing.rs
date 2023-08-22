@@ -30,7 +30,7 @@ impl structure::Album {
 
 impl structure::Channel {
     fn process(&mut self, bpm: NonZeroU16) -> Result<Samples> {
-        Ok(Decoder::new(bpm).decode(&self, self.generator()?)?)
+        Decoder::new(bpm).decode(self, self.generator()?)
     }
 }
 

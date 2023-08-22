@@ -40,7 +40,7 @@ pub(crate) enum Atom {
 type R = Result<Atom, ErrorKind>;
 type LeResult<'a> = IResult<&'a str, Atom>;
 
-fn octave(i: &str) -> IResult<&str, Atom> {
+fn octave(i: &str) -> LeResult {
     map_res(
         map_opt(
             verify(preceded(char(OCTAVE), u8), |n| NonZeroU8::new(*n).is_some()),
@@ -50,7 +50,7 @@ fn octave(i: &str) -> IResult<&str, Atom> {
     )(i)
 }
 
-fn length(i: &str) -> IResult<&str, Atom> {
+fn length(i: &str) -> LeResult {
     map_res(
         map_opt(
             verify(preceded(char(LENGTH), u8), |n| NonZeroU8::new(*n).is_some()),
@@ -60,7 +60,7 @@ fn length(i: &str) -> IResult<&str, Atom> {
     )(i)
 }
 
-fn volume(i: &str) -> IResult<&str, Atom> {
+fn volume(i: &str) -> LeResult {
     map_res(preceded(char(VOLUME), u8), move |n| R::Ok(Atom::Volume(n)))(i)
 }
 
@@ -105,7 +105,7 @@ fn junk(i: &str) -> IResult<&str, ()> {
     value((), multispace0)(i)
 }
 
-fn atom<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, Atom> + 'a {
+fn atom<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> LeResult + 'a {
     preceded(
         junk,
         alt((
