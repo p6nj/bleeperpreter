@@ -67,6 +67,7 @@ impl Decoder {
                             NonZeroU8::new(u8::from(self.length) / NonZeroU8::new(2).unwrap())
                                 .context("Length underflow")?;
                     }
+                    Atom::Loop(_) => todo!(),
                 };
                 Ok(None)
             })

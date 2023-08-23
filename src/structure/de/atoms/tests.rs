@@ -76,10 +76,13 @@ fn volume_decr() {
         super::volumedecr(format!("{VOLUMEDECR}").as_str())
     );
 }
-// #[test]
-// fn loop_() {
-//     assert_parses("(ccc)", Atom::Loop(vec![]), None);
-// }
+#[test]
+fn loop_() {
+    assert_eq!(
+        Ok(("", Atom::Loop("ccc".to_string()))),
+        super::loop_("(ccc)")
+    );
+}
 // #[test]
 // fn tuplet() {
 //     assert_parses("[]", Atom::Tuplet(vec![]), None);

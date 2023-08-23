@@ -1,4 +1,5 @@
 use nom::branch::alt;
+use nom::bytes::complete::is_not;
 use nom::character::complete::u8;
 use nom::character::complete::{char, multispace0, one_of};
 use nom::combinator::{map_opt, map_res, value, verify};
@@ -35,6 +36,7 @@ pub(crate) enum Atom {
     LengthDecr,
     VolumeIncr,
     VolumeDecr,
+    Loop(String),
 }
 
 type R = Result<Atom, ErrorKind>;
@@ -122,6 +124,40 @@ fn atom<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> LeResult + 'a {
             volumedecr,
         )),
     )
+}
+
+fn close_loop(i: &str) -> IResult<&str, String> {
+    let mut lvl = 1u8;
+    let mut result = String::new();
+    let mut i = i;
+    while let Ok((r, c)) = is_not::<&str, &str, Error<&str>>("()")(i) {
+        result.push_str(c);
+        {
+            let ch = r
+                .chars()
+                .next()
+                .ok_or(Err::Error(Error::new("", ErrorKind::Complete)))?;
+            match ch {
+                '(' => lvl += 1,
+                ')' => {
+                    lvl -= 1;
+                    if lvl == 0 {
+                        return Ok((&r[1..], result));
+                    }
+                }
+                _ => unreachable!(),
+            }
+            result.push(ch);
+        }
+        i = r;
+    }
+    Err(Err::Error(Error::new("", ErrorKind::Complete)))
+}
+
+fn loop_(i: &str) -> LeResult {
+    map_res(preceded(char('('), close_loop), move |res| {
+        R::Ok(Atom::Loop(res))
+    })(i)
 }
 
 impl Atom {
