@@ -67,7 +67,7 @@ impl Decoder {
                             NonZeroU8::new(u8::from(self.length) / NonZeroU8::new(2).unwrap())
                                 .context("Length underflow")?;
                     }
-                    Atom::Loop(_) => todo!(),
+                    Atom::Loop(_) => todo!("IntoIterator that gets rid of these variants"),
                 };
                 Ok(None)
             })

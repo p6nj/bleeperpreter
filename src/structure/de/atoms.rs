@@ -1,5 +1,5 @@
 use nom::branch::alt;
-use nom::bytes::complete::is_not;
+use nom::bytes::complete::take_till1;
 use nom::character::complete::u8;
 use nom::character::complete::{char, multispace0, one_of};
 use nom::combinator::{consumed, map_opt, map_res, value, verify};
@@ -22,6 +22,8 @@ const LENGTHINCR: char = '/';
 const LENGTHDECR: char = '\\';
 const VOLUMEINCR: char = '^';
 const VOLUMEDECR: char = '_';
+const LOOP_IN: char = '(';
+const LOOP_OUT: char = ')';
 
 #[derive(PartialEq, Debug, Clone)]
 pub(crate) enum Atom {
@@ -130,15 +132,17 @@ fn atom<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, Atom> {
 fn close_loop(i: &str) -> IResult<&str, ()> {
     let mut lvl = 1u8;
     let mut input = i;
-    while let Ok((r, _)) = is_not::<&str, &str, Error<&str>>("()")(input) {
+    while let Ok((r, _)) =
+        take_till1::<_, &str, Error<&str>>(|c| c == LOOP_IN || c == LOOP_OUT)(input)
+    {
         {
             let ch = r
                 .chars()
                 .next()
                 .ok_or(Err::Error(Error::new("", ErrorKind::Complete)))?;
             match ch {
-                '(' => lvl += 1,
-                ')' => {
+                LOOP_IN => lvl += 1,
+                LOOP_OUT => {
                     lvl -= 1;
                     if lvl == 0 {
                         return Ok((&r[1..], ()));
