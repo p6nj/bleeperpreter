@@ -79,8 +79,11 @@ fn volume_decr() {
 #[test]
 fn loop_() {
     assert_eq!(
-        Ok(("", Atom::Loop("ccc".to_string()))),
-        super::loop_("(ccc)")
+        Ok((
+            "",
+            Atom::Loop(vec![Atom::Note(2, NonZeroUsize::new(1).unwrap()); 3])
+        )),
+        super::loop_("abcde")("(ccc)")
     );
 }
 // #[test]

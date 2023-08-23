@@ -2,7 +2,7 @@ use nom::branch::alt;
 use nom::bytes::complete::is_not;
 use nom::character::complete::u8;
 use nom::character::complete::{char, multispace0, one_of};
-use nom::combinator::{map_opt, map_res, value, verify};
+use nom::combinator::{consumed, map_opt, map_res, value, verify};
 use nom::error::{Error, ErrorKind};
 use nom::multi::many0;
 use nom::sequence::preceded;
@@ -36,10 +36,10 @@ pub(crate) enum Atom {
     LengthDecr,
     VolumeIncr,
     VolumeDecr,
-    Loop(String),
+    Loop(Vec<Atom>),
 }
 
-type R = Result<Atom, ErrorKind>;
+type R<'a> = Result<Atom, Err<Error<&'a str>>>;
 type LeResult<'a> = IResult<&'a str, Atom>;
 
 fn octave(i: &str) -> LeResult {
@@ -107,7 +107,7 @@ fn junk(i: &str) -> IResult<&str, ()> {
     value((), multispace0)(i)
 }
 
-fn atom<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> LeResult + 'a {
+fn atom<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, Atom> {
     preceded(
         junk,
         alt((
@@ -122,16 +122,15 @@ fn atom<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> LeResult + 'a {
             lengthdecr,
             volumeincr,
             volumedecr,
+            loop_(noteset),
         )),
     )
 }
 
-fn close_loop(i: &str) -> IResult<&str, String> {
+fn close_loop(i: &str) -> IResult<&str, ()> {
     let mut lvl = 1u8;
-    let mut result = String::new();
-    let mut i = i;
-    while let Ok((r, c)) = is_not::<&str, &str, Error<&str>>("()")(i) {
-        result.push_str(c);
+    let mut input = i;
+    while let Ok((r, _)) = is_not::<&str, &str, Error<&str>>("()")(input) {
         {
             let ch = r
                 .chars()
@@ -142,22 +141,22 @@ fn close_loop(i: &str) -> IResult<&str, String> {
                 ')' => {
                     lvl -= 1;
                     if lvl == 0 {
-                        return Ok((&r[1..], result));
+                        return Ok((&r[1..], ()));
                     }
                 }
                 _ => unreachable!(),
             }
-            result.push(ch);
         }
-        i = r;
+        input = r;
     }
     Err(Err::Error(Error::new("", ErrorKind::Complete)))
 }
 
-fn loop_(i: &str) -> LeResult {
-    map_res(preceded(char('('), close_loop), move |res| {
-        R::Ok(Atom::Loop(res))
-    })(i)
+fn loop_<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> LeResult + 'a {
+    map_res(
+        preceded(char('('), consumed(close_loop)),
+        move |(res, _)| R::Ok(Atom::Loop(many0(atom(noteset))(res)?.1)),
+    )
 }
 
 impl Atom {
