@@ -78,7 +78,14 @@ impl Iterator for NoteIterator {
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.0.pop();
         match next {
-            Some(Atom::Loop(mut v)) => {
+            Some(Atom::Loop(v)) => {
+                let mut v = v
+                    .iter()
+                    .cloned()
+                    .cycle()
+                    .take(v.len() * 2)
+                    .collect::<Vec<Atom>>();
+                v.reverse();
                 self.0.append(&mut v);
                 self.0.pop()
             }
