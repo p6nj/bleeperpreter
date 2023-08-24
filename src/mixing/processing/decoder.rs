@@ -1,28 +1,6 @@
 use super::*;
-use anyhow::{Context, Result};
-
-impl Decoder {
-    pub(super) fn new(bpm: NonZeroU16) -> Self {
-        Decoder {
-            bpm,
-            octave: 4,
-            length: NonZeroU8::new(4).unwrap(),
-            volume: 100,
-            remainder: 0,
-            tup: NonZeroUsize::new(1).unwrap(),
-        }
-    }
-    fn real_length(&mut self) -> Result<usize> {
-        let numerator = 240 * 48000 + self.remainder;
-        let denominator = NonZeroUsize::from(self.bpm)
-            .checked_mul(self.length.into())
-            .context("Overflow: bpm * length")?
-            .checked_mul(self.tup)
-            .context("Overflow: (bpm * length) * tuple")?;
-        self.remainder = numerator.rem_euclid(denominator.into());
-        Ok(numerator / denominator)
-    }
-}
+use crate::structure::Notes;
+use anyhow::Result;
 
 impl Decoder {
     pub(super) fn decode(
@@ -32,21 +10,21 @@ impl Decoder {
     ) -> Result<Vec<f32>> {
         Ok(channel
             .notes
-            .score
-            .iter()
+            .clone()
+            .into_iter()
             .map(|atom| {
                 match atom {
-                    Atom::Octave(o) => self.octave = u8::from(*o) - 1,
+                    Atom::Octave(o) => self.octave = u8::from(o) - 1,
                     Atom::Length(l) => {
-                        self.length = *l;
+                        self.length = l;
                     }
-                    Atom::Volume(v) => self.volume = *v,
+                    Atom::Volume(v) => self.volume = v,
                     Atom::Note(n, _) => {
                         let length = self.real_length()?;
                         if length != 0 {
                             return Ok(Some(gen(
                                 NonZeroUsize::new(length).unwrap(),
-                                *n,
+                                n,
                                 self.octave,
                                 self.volume,
                             )));
@@ -67,7 +45,7 @@ impl Decoder {
                             NonZeroU8::new(u8::from(self.length) / NonZeroU8::new(2).unwrap())
                                 .context("Length underflow")?;
                     }
-                    Atom::Loop(_) => todo!("IntoIterator that gets rid of these variants"),
+                    _ => unreachable!("Loops and tuplets should be flattened by the NoteIterator"),
                 };
                 Ok(None)
             })
@@ -77,5 +55,34 @@ impl Decoder {
             .flatten()
             .cloned()
             .collect())
+    }
+}
+
+impl IntoIterator for Notes {
+    type Item = Atom;
+    type IntoIter = NoteIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        NoteIterator({
+            let mut v = self.score;
+            v.reverse();
+            v
+        })
+    }
+}
+
+pub(crate) struct NoteIterator(Vec<Atom>);
+
+impl Iterator for NoteIterator {
+    type Item = Atom;
+    fn next(&mut self) -> Option<Self::Item> {
+        let next = self.0.pop();
+        match next {
+            Some(Atom::Loop(mut v)) => {
+                self.0.append(&mut v);
+                self.0.pop()
+            }
+            other => other,
+        }
     }
 }

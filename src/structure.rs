@@ -28,7 +28,7 @@ pub(crate) struct Track {
     pub(crate) channels: HashMap<String, Channel>,
 }
 
-#[derive(new, PartialEq, Debug)]
+#[derive(new, PartialEq, Debug, Clone)]
 pub(crate) struct Notes {
     pub(crate) set: String,
     pub(crate) score: Vec<Atom>,
