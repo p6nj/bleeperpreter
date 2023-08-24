@@ -79,7 +79,21 @@ fn loop_() {
     assert_eq!(
         Ok((
             "",
-            Atom::Loop(vec![Atom::Note(2, NonZeroUsize::new(1).unwrap()); 3])
+            Atom::Loop(
+                NonZeroU16::new(2).unwrap(),
+                vec![Atom::Note(2, NonZeroUsize::new(1).unwrap()); 3]
+            )
+        )),
+        super::loop_("abcde")(&input)
+    );
+    let input = format!("{LOOP_IN}45ccc{LOOP_OUT}");
+    assert_eq!(
+        Ok((
+            "",
+            Atom::Loop(
+                NonZeroU16::new(45).unwrap(),
+                vec![Atom::Note(2, NonZeroUsize::new(1).unwrap()); 3]
+            )
         )),
         super::loop_("abcde")(&input)
     );

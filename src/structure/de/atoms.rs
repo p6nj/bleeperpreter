@@ -1,13 +1,13 @@
 use nom::branch::alt;
 use nom::bytes::complete::take_till1;
-use nom::character::complete::u8;
 use nom::character::complete::{char, multispace0, one_of};
-use nom::combinator::{consumed, map_opt, map_res, value, verify};
+use nom::character::complete::{u16, u8};
+use nom::combinator::{consumed, map_opt, map_res, opt, value, verify};
 use nom::error::{Error, ErrorKind};
 use nom::multi::many0;
-use nom::sequence::preceded;
+use nom::sequence::{pair, preceded};
 use nom::{Err, IResult};
-use std::num::{NonZeroU8, NonZeroUsize};
+use std::num::{NonZeroU16, NonZeroU8, NonZeroUsize};
 
 #[cfg(test)]
 mod tests;
@@ -38,7 +38,7 @@ pub(crate) enum Atom {
     LengthDecr,
     VolumeIncr,
     VolumeDecr,
-    Loop(Vec<Atom>),
+    Loop(NonZeroU16, Vec<Atom>),
 }
 
 type R<'a> = Result<Atom, Err<Error<&'a str>>>;
@@ -158,8 +158,22 @@ fn close_loop(i: &str) -> IResult<&str, ()> {
 
 fn loop_<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> LeResult + 'a {
     map_res(
-        preceded(char('('), consumed(close_loop)),
-        move |(res, _)| R::Ok(Atom::Loop(many0(atom(noteset))(res)?.1)),
+        preceded(
+            char('('),
+            pair(
+                opt(map_opt(
+                    verify(u16, |res| NonZeroU16::new(*res).is_some()),
+                    NonZeroU16::new,
+                )),
+                consumed(close_loop),
+            ),
+        ),
+        move |(repeat, (rest, _))| {
+            R::Ok(Atom::Loop(
+                repeat.unwrap_or(NonZeroU16::new(2).unwrap()),
+                many0(atom(noteset))(rest)?.1,
+            ))
+        },
     )
 }
 
