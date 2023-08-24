@@ -24,6 +24,8 @@ const VOLUMEINCR: char = '^';
 const VOLUMEDECR: char = '_';
 const LOOP_IN: char = '(';
 const LOOP_OUT: char = ')';
+const TUP_IN: char = '[';
+const TUP_OUT: char = ']';
 
 #[derive(PartialEq, Debug, Clone)]
 pub(crate) enum Atom {
@@ -39,6 +41,7 @@ pub(crate) enum Atom {
     VolumeIncr,
     VolumeDecr,
     Loop(NonZeroU16, Vec<Atom>),
+    Tuplet(Vec<Atom>),
 }
 
 type R<'a> = Result<Atom, Err<Error<&'a str>>>;
@@ -124,56 +127,64 @@ fn atom<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, Atom> {
             lengthdecr,
             volumeincr,
             volumedecr,
-            loop_(noteset),
+            r#loop(noteset),
+            tuplet(noteset),
         )),
     )
 }
 
-fn close_loop(i: &str) -> IResult<&str, ()> {
-    let mut lvl = 1u8;
-    let mut input = i;
-    while let Ok((r, _)) =
-        take_till1::<_, &str, Error<&str>>(|c| c == LOOP_IN || c == LOOP_OUT)(input)
-    {
+fn close(in_tag: char, out_tag: char) -> impl FnMut(&str) -> IResult<&str, ()> {
+    move |i| {
+        let mut lvl = 1u8;
+        let mut input = i;
+        while let Ok((r, _)) =
+            take_till1::<_, &str, Error<&str>>(|c| c == in_tag || c == out_tag)(input)
         {
-            let ch = r
-                .chars()
-                .next()
-                .ok_or(Err::Error(Error::new("", ErrorKind::Complete)))?;
-            match ch {
-                LOOP_IN => lvl += 1,
-                LOOP_OUT => {
+            {
+                let ch = r
+                    .chars()
+                    .next()
+                    .ok_or(Err::Error(Error::new("", ErrorKind::Complete)))?;
+                if ch == in_tag {
+                    lvl += 1
+                } else {
                     lvl -= 1;
                     if lvl == 0 {
                         return Ok((&r[1..], ()));
                     }
                 }
-                _ => unreachable!(),
             }
+            input = r;
         }
-        input = r;
+        Err(Err::Error(Error::new("", ErrorKind::Complete)))
     }
-    Err(Err::Error(Error::new("", ErrorKind::Complete)))
 }
 
-fn loop_<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> LeResult + 'a {
+fn r#loop<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> LeResult + 'a {
     map_res(
         preceded(
-            char('('),
+            char(LOOP_IN),
             pair(
                 opt(map_opt(
                     verify(u16, |res| NonZeroU16::new(*res).is_some()),
                     NonZeroU16::new,
                 )),
-                consumed(close_loop),
+                consumed(close(LOOP_IN, LOOP_OUT)),
             ),
         ),
-        move |(repeat, (rest, _))| {
+        move |(repeat, (inner, _))| {
             R::Ok(Atom::Loop(
                 repeat.unwrap_or(NonZeroU16::new(2).unwrap()),
-                many0(atom(noteset))(rest)?.1,
+                many0(atom(noteset))(inner)?.1,
             ))
         },
+    )
+}
+
+fn tuplet<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> LeResult + 'a {
+    map_res(
+        preceded(char(TUP_IN), consumed(close(TUP_IN, TUP_OUT))),
+        move |(inner, _)| R::Ok(Atom::Tuplet(many0(atom(noteset))(inner)?.1)),
     )
 }
 

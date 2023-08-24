@@ -84,7 +84,7 @@ fn loop_() {
                 vec![Atom::Note(2, NonZeroUsize::new(1).unwrap()); 3]
             )
         )),
-        super::loop_("abcde")(&input)
+        super::r#loop("abcde")(&input)
     );
     let input = format!("{LOOP_IN}45ccc{LOOP_OUT}");
     assert_eq!(
@@ -95,10 +95,17 @@ fn loop_() {
                 vec![Atom::Note(2, NonZeroUsize::new(1).unwrap()); 3]
             )
         )),
-        super::loop_("abcde")(&input)
+        super::r#loop("abcde")(&input)
     );
 }
-// #[test]
-// fn tuplet() {
-//     assert_parses("[]", Atom::Tuplet(vec![]), None);
-// }
+#[test]
+fn tuplet() {
+    let input = format!("{TUP_IN}ccc{TUP_OUT}");
+    assert_eq!(
+        Ok((
+            "",
+            Atom::Tuplet(vec![Atom::Note(2, NonZeroUsize::new(1).unwrap()); 3])
+        )),
+        super::tuplet("abcde")(&input)
+    );
+}

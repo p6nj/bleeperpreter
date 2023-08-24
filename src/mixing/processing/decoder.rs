@@ -19,7 +19,8 @@ impl Decoder {
                         self.length = l;
                     }
                     Atom::Volume(v) => self.volume = v,
-                    Atom::Note(n, _) => {
+                    Atom::Note(n, tup) => {
+                        self.tup = tup;
                         let length = self.real_length()?;
                         if length != 0 {
                             return Ok(Some(gen(
@@ -84,6 +85,22 @@ impl Iterator for NoteIterator {
                     .cloned()
                     .cycle()
                     .take(v.len() * usize::from(NonZeroUsize::from(repeat)))
+                    .collect::<Vec<Atom>>();
+                v.reverse();
+                self.0.append(&mut v);
+                self.0.pop()
+            }
+            Some(Atom::Tuplet(v)) => {
+                let mut v = v
+                    .iter()
+                    .map(|atom| {
+                        if let Atom::Note(n, tup) = atom {
+                            return Atom::Note(*n, tup.saturating_add(v.len()));
+                        }
+                        atom.clone()
+                    })
+                    .cycle()
+                    .take(v.len())
                     .collect::<Vec<Atom>>();
                 v.reverse();
                 self.0.append(&mut v);

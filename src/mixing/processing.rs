@@ -39,7 +39,7 @@ struct Decoder {
     octave: u8,
     length: NonZeroU8,
     volume: u8,
-    remainder: u8,
+    remainder: u16,
     tup: NonZeroUsize,
 }
 
