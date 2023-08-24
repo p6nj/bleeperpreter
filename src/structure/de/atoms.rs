@@ -184,7 +184,11 @@ fn r#loop<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> LeResult + 'a {
 fn tuplet<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> LeResult + 'a {
     map_res(
         preceded(char(TUP_IN), consumed(close(TUP_IN, TUP_OUT))),
-        move |(inner, _)| R::Ok(Atom::Tuplet(many0(atom(noteset))(inner)?.1)),
+        move |(inner, _)| {
+            R::Ok(Atom::Tuplet(
+                verify(many0(atom(noteset)), |res: &Vec<Atom>| res.len() > 0)(inner)?.1,
+            ))
+        },
     )
 }
 

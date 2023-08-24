@@ -77,36 +77,43 @@ pub(crate) struct NoteIterator(Vec<Atom>);
 impl Iterator for NoteIterator {
     type Item = Atom;
     fn next(&mut self) -> Option<Self::Item> {
-        let next = self.0.pop();
-        match next {
-            Some(Atom::Loop(repeat, v)) => {
-                let mut v = v
-                    .iter()
-                    .cloned()
-                    .cycle()
-                    .take(v.len() * usize::from(NonZeroUsize::from(repeat)))
-                    .collect::<Vec<Atom>>();
-                v.reverse();
-                self.0.append(&mut v);
-                self.0.pop()
+        loop {
+            let next = self.0.pop();
+            match next {
+                Some(Atom::Loop(repeat, v)) => {
+                    let mut v = v
+                        .iter()
+                        .cloned()
+                        .cycle()
+                        .take(v.len() * usize::from(NonZeroUsize::from(repeat)))
+                        .collect::<Vec<Atom>>();
+                    v.reverse();
+                    self.0.append(&mut v);
+                }
+                Some(Atom::Tuplet(v)) => {
+                    let mut v = Notes::new(String::new(), v)
+                        .into_iter()
+                        .collect::<Vec<Atom>>();
+                    let length = v.len();
+                    v = v
+                        .iter()
+                        .map(|atom| {
+                            if let Atom::Note(n, tup) = atom {
+                                return Atom::Note(
+                                    *n,
+                                    tup.saturating_mul(NonZeroUsize::new(length).unwrap()),
+                                );
+                            }
+                            atom.clone()
+                        })
+                        .cycle()
+                        .take(length)
+                        .collect::<Vec<Atom>>();
+                    v.reverse();
+                    self.0.append(&mut v);
+                }
+                other => break other,
             }
-            Some(Atom::Tuplet(v)) => {
-                let mut v = v
-                    .iter()
-                    .map(|atom| {
-                        if let Atom::Note(n, tup) = atom {
-                            return Atom::Note(*n, tup.saturating_add(v.len()));
-                        }
-                        atom.clone()
-                    })
-                    .cycle()
-                    .take(v.len())
-                    .collect::<Vec<Atom>>();
-                v.reverse();
-                self.0.append(&mut v);
-                self.0.pop()
-            }
-            other => other,
         }
     }
 }

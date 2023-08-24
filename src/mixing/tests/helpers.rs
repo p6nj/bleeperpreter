@@ -1,6 +1,6 @@
 use super::*;
 
-pub(super) fn mixed_root_length(bpm: u8, lengths: (u8, u8)) -> usize {
+pub(super) fn mixed_root(bpm: u8, lengths: (u8, u8)) -> usize {
     from_str::<Root>(
         format!(
             r#"{{
@@ -28,6 +28,42 @@ pub(super) fn mixed_root_length(bpm: u8, lengths: (u8, u8)) -> usize {
         }}
     }}"#,
             bpm, lengths.0, lengths.1
+        )
+        .as_str(),
+    )
+    .unwrap()
+    .mix()
+    .unwrap()
+    .get("My First Album")
+    .unwrap()
+    .1
+    .get("My First Song")
+    .unwrap()
+    .len()
+}
+
+pub(super) fn custom_mask(mask: &str) -> usize {
+    from_str::<Root>(
+        format!(
+            r#"{{
+        "My First Album": {{
+            "artist": "me",
+            "tracks": {{
+                "My First Song": {{
+                    "BPM": 60,
+                    "channels": {{
+                        "piano": {{
+                            "signal": "4*abs(f*t-floor(f*t+1/2))-1",
+                            "set": "aAbcCdDefFgG",
+                            "score": "{}",
+                            "tuning": 442
+                        }}
+                    }}
+                }}
+            }}
+        }}
+    }}"#,
+            mask
         )
         .as_str(),
     )

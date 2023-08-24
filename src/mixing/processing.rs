@@ -39,7 +39,7 @@ struct Decoder {
     octave: u8,
     length: NonZeroU8,
     volume: u8,
-    remainder: u16,
+    remainder: usize,
     tup: NonZeroUsize,
 }
 
@@ -55,13 +55,14 @@ impl Decoder {
         }
     }
     fn real_length(&mut self) -> Result<usize> {
-        let numerator = 48000 * 4 * 60;
+        let numerator = 48000 * 4 * 60 + (self.remainder as usize);
+
         let denominator = usize::from(NonZeroUsize::from(self.bpm))
             * usize::from(NonZeroUsize::from(self.length))
             * usize::from(self.tup);
-        self.remainder = (numerator % denominator)
-            .try_into()
-            .context("REMAINDER OVERFLOW BUG")?;
+
+        self.remainder = numerator % denominator;
+
         Ok(numerator / denominator)
     }
 }
