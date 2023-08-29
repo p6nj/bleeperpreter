@@ -1,8 +1,9 @@
 [package]
 name = "bppt"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
-about = "An advanced JSON MML interpreter"
+description = "An advanced JSON MML interpreter"
+authors = ["Breval Ferrari <breee@duck.com>"]
 
 [dependencies]
 anyhow = "1.0"
