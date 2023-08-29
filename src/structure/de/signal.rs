@@ -1,9 +1,10 @@
-use derive_new::new;
+use super::*;
 use lazy_regex::{regex_captures, regex_replace_all};
 
-use super::*;
+#[cfg(test)]
+mod tests;
 
-#[derive(PartialEq, Debug, new, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub(crate) struct Signal(pub(crate) Expr);
 
 impl<'de> Deserialize<'de> for Signal {
@@ -36,20 +37,22 @@ impl<'de> Deserialize<'de> for Signal {
                     .cloned()
                     .try_reduce(|expr, context| -> Result<String, A::Error> {
                         let (_, left, right) = regex_captures!(
-                            r"^(?P<left>[A-z]+) *= *(?P<right>.+)$"s,
-                            expr.as_str()
+                            r"^(?P<left>[A-z|(|)]+) *= *(?P<right>.+)$"s,
+                            context.as_str()
                         )
                         .ok_or_else(|| {
-                            A::Error::custom(format!("invalid expression: {}", context))
+                            A::Error::custom(format!(r#"invalid expression: "{}""#, context))
                         })?;
                         Ok(match left.contains('(') {
                             true => {
                                 let fname =
                                     regex_captures!(r"^[A-z]+"s, left).ok_or_else(|| {
-                                        A::Error::custom(format!("invalid function name: {left}"))
+                                        A::Error::custom(format!(
+                                            r#"invalid function name: "{left}""#
+                                        ))
                                     })?;
                                 regex_replace_all!(
-                                    r"\b(?P<f>[A-z]+)\((?P<arg>[^)]+)\)\b"s,
+                                    r"(?P<f>[A-z]+)\((?P<arg>[^()]+)\)"s,
                                     &expr,
                                     move |_, f, arg| {
                                         if f == fname {
@@ -78,6 +81,6 @@ impl<'de> Deserialize<'de> for Signal {
                 ))
             }
         }
-        deserializer.deserialize_str(SignalVisitor)
+        deserializer.deserialize_any(SignalVisitor)
     }
 }
