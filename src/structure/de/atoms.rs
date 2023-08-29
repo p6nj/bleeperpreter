@@ -186,7 +186,7 @@ fn tuplet<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> LeResult + 'a {
         preceded(char(TUP_IN), consumed(close(TUP_IN, TUP_OUT))),
         move |(inner, _)| {
             R::Ok(Atom::Tuplet(
-                verify(many0(atom(noteset)), |res: &Vec<Atom>| res.len() > 0)(inner)?.1,
+                verify(many0(atom(noteset)), |res: &Vec<Atom>| !res.is_empty())(inner)?.1,
             ))
         },
     )

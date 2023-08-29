@@ -55,7 +55,7 @@ impl Decoder {
         }
     }
     fn real_length(&mut self) -> Result<usize> {
-        let numerator = 48000 * 4 * 60 + (self.remainder as usize);
+        let numerator = 48000 * 4 * 60 + self.remainder;
 
         let denominator = usize::from(NonZeroUsize::from(self.bpm))
             * usize::from(NonZeroUsize::from(self.length))
