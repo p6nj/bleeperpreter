@@ -10,6 +10,7 @@ clap = { version = "4.3.21", features = ["derive"] }
 derive-new = "0.5"
 dirs = "5.0"
 hound = "3.5"
+lazy-regex = { version = "3.0.1", features = ["perf"] }
 meval = { version = "0.2", features = ["serde"] }
 nom = "7.1"
 rayon = "1.7"

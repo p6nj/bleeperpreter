@@ -1,12 +1,12 @@
 use anyhow::{Ok, Result};
 use derive_new::new;
-use meval::Expr;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::num::{NonZeroU16, NonZeroUsize};
 
 pub(crate) use self::de::Atom;
+use self::de::Signal;
 
 mod de;
 
@@ -36,7 +36,7 @@ pub(crate) struct Notes {
 
 impl Channel {
     pub(crate) fn generator(&self) -> Result<impl Fn(NonZeroUsize, u8, u8, u8) -> Vec<f32>> {
-        let func = self.signal.clone().bind2("t", "f")?;
+        let func = self.signal.clone().0.bind2("t", "f")?;
         let notes = self.notes.set.len() as u8;
         let tuning = self.tuning;
         Ok(
@@ -56,7 +56,7 @@ impl Channel {
 
 #[derive(PartialEq, Debug, new, Deserialize)]
 pub(crate) struct Channel {
-    pub(crate) signal: Expr,
+    pub(crate) signal: Signal,
     #[serde(flatten)]
     pub(crate) notes: Notes,
     pub(crate) tuning: f32,

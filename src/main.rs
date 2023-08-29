@@ -1,3 +1,5 @@
+#![feature(iterator_try_reduce)]
+
 mod mixing;
 mod playing;
 mod saving;
