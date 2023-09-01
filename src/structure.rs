@@ -1,5 +1,5 @@
 pub(crate) use self::de::Atom;
-pub(super) use self::de::Signal;
+pub use self::de::Signal;
 use anyhow::{Ok, Result};
 use derive_new::new;
 use serde::Deserialize;
@@ -13,23 +13,23 @@ mod default;
 pub(crate) const SAMPLE_RATE: u32 = 48000;
 
 #[derive(PartialEq, Debug, Deserialize)]
-pub(crate) struct Root(pub(crate) HashMap<String, Album>);
+pub struct Root(pub HashMap<String, Album>);
 
 #[derive(new, PartialEq, Debug, Deserialize)]
-pub(crate) struct Album {
-    pub(crate) artist: String,
-    pub(crate) tracks: HashMap<String, Track>,
+pub struct Album {
+    pub artist: String,
+    pub tracks: HashMap<String, Track>,
 }
 
 #[derive(new, PartialEq, Debug, Deserialize)]
-pub(crate) struct Track {
+pub struct Track {
     #[serde(rename = "BPM")]
-    pub(crate) bpm: NonZeroU16,
-    pub(crate) channels: HashMap<String, Channel>,
+    pub bpm: NonZeroU16,
+    pub channels: HashMap<String, Channel>,
 }
 
 #[derive(new, PartialEq, Debug, Clone)]
-pub(crate) struct Notes {
+pub struct Notes {
     pub(crate) set: String,
     pub(crate) score: Vec<Atom>,
 }
@@ -55,9 +55,9 @@ impl Channel {
 }
 
 #[derive(PartialEq, Debug, new, Deserialize)]
-pub(crate) struct Channel {
-    pub(crate) signal: Signal,
+pub struct Channel {
+    pub signal: Signal,
     #[serde(flatten)]
-    pub(crate) notes: Notes,
-    pub(crate) tuning: f32,
+    pub notes: Notes,
+    pub tuning: f32,
 }

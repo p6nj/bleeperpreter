@@ -7,6 +7,7 @@ use meval::Expr;
 use serde_json::from_str;
 use std::{fs::read_to_string, str::FromStr};
 
+/// Argument parser entry point
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 pub(super) struct Cli {

@@ -3,7 +3,9 @@ use anyhow::{Ok, Result};
 use hound::{SampleFormat, WavSpec};
 use std::{fs::create_dir, path::Path};
 
-pub(crate) fn save<P: AsRef<Path>>(mix: MixedRoot, dir: P) -> Result<()> {
+/// Saves a mixed root structure as a file structure in the given directory.
+/// Albums are subdirectories named "`{ARTIST} - {ALBUM}`", tracks are wav files.
+pub fn save<P: AsRef<Path>>(mix: MixedRoot, dir: P) -> Result<()> {
     let spec = WavSpec {
         channels: 1,
         sample_rate: SAMPLE_RATE,

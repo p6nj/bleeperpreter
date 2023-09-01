@@ -5,6 +5,13 @@ edition = "2021"
 description = "An advanced JSON MML interpreter"
 authors = ["Breval Ferrari <breee@duck.com>"]
 
+[lib]
+name = "bpptlib"
+
+[[bin]]
+name = "bppt"
+path = "src/main.rs"
+
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4.3.21", features = ["derive"] }

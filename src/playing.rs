@@ -2,8 +2,8 @@ use crate::{mixing::MixedRoot, structure::SAMPLE_RATE};
 use anyhow::Result;
 use rodio::{buffer::SamplesBuffer, OutputStream, Source};
 
-#[allow(dead_code)]
-pub(crate) fn play(mix: MixedRoot) -> Result<()> {
+/// Play an entire album, printing the name of each track as it plays. Uses [`rodio`](https://docs.rs/rodio) for the playback.
+pub fn play(mix: MixedRoot) -> Result<()> {
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     mix.iter()
         .try_for_each(|(album, album_data)| -> Result<()> {

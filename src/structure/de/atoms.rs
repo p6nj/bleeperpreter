@@ -28,7 +28,7 @@ const TUP_IN: char = '[';
 const TUP_OUT: char = ']';
 
 #[derive(PartialEq, Debug, Clone)]
-pub(crate) enum Atom {
+pub enum Atom {
     Octave(NonZeroU8),
     Length(NonZeroU8),
     Volume(u8),

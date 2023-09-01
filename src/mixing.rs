@@ -1,6 +1,5 @@
 use crate::structure::{self, Atom};
 use anyhow::Result;
-use rayon::prelude::{IntoParallelRefMutIterator, ParallelIterator};
 use std::collections::HashMap;
 
 type Track = HashMap<String, Samples>;
@@ -15,7 +14,11 @@ mod processing;
 mod tests;
 
 impl structure::Root {
-    pub(crate) fn mix(mut self) -> Result<MixedRoot> {
+    /// Turns the root structure into a mixed root structure.
+    /// The mixing process is parallelized (one thread per channel) and the output is a hashmap of albums containing tracks as flattened samples.
+    ///
+    /// Everything lower on the initial structure such as channel names is discarded in the process.
+    pub fn mix(mut self) -> Result<MixedRoot> {
         self.0
             .iter_mut()
             .map(|(name, album)| -> Result<(String, MixedAlbum)> {

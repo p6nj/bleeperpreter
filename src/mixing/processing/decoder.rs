@@ -11,7 +11,7 @@ impl Decoder {
         Ok(channel
             .notes
             .clone()
-            .into_iter()
+            .flat_iter()
             .map(|atom| {
                 match atom {
                     Atom::Octave(o) => self.octave = u8::from(o) - 1,
@@ -51,7 +51,9 @@ impl Decoder {
                                     format!("Length underflow, already at length {}", self.length)
                                 })?;
                     }
-                    _ => unreachable!("Loops and tuplets should be flattened by the NoteIterator"),
+                    _ => unreachable!(
+                        "Loops and tuplets should be flattened by the FlattenedNoteIterator"
+                    ),
                 };
                 Ok(None)
             })
@@ -64,12 +66,9 @@ impl Decoder {
     }
 }
 
-impl IntoIterator for Notes {
-    type Item = Atom;
-    type IntoIter = NoteIterator;
-
-    fn into_iter(self) -> Self::IntoIter {
-        NoteIterator({
+impl Notes {
+    pub fn flat_iter(self) -> FlattenedNoteIterator {
+        FlattenedNoteIterator({
             let mut v = self.score;
             v.reverse();
             v
@@ -77,9 +76,9 @@ impl IntoIterator for Notes {
     }
 }
 
-pub(crate) struct NoteIterator(Vec<Atom>);
+pub struct FlattenedNoteIterator(Vec<Atom>);
 
-impl Iterator for NoteIterator {
+impl Iterator for FlattenedNoteIterator {
     type Item = Atom;
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -97,7 +96,7 @@ impl Iterator for NoteIterator {
                 }
                 Some(Atom::Tuplet(v)) => {
                     let mut v = Notes::new(String::new(), v)
-                        .into_iter()
+                        .flat_iter()
                         .collect::<Vec<Atom>>();
                     let length = v.len();
                     v = v

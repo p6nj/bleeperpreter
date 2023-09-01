@@ -5,7 +5,7 @@ use lazy_regex::{regex_captures, regex_replace_all};
 mod tests;
 
 #[derive(PartialEq, Debug, Clone)]
-pub(crate) struct Signal(pub(crate) Expr);
+pub struct Signal(pub(crate) Expr);
 
 impl<'de> Deserialize<'de> for Signal {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
