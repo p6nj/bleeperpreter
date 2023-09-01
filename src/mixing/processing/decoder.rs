@@ -37,14 +37,19 @@ impl Decoder {
                     Atom::VolumeIncr => self.volume += 1,
                     Atom::VolumeDecr => self.volume -= 1,
                     Atom::LengthIncr => {
-                        self.length
+                        self.length = self
+                            .length
                             .checked_mul(NonZeroU8::new(2).unwrap())
-                            .context("Length overflow")?;
+                            .with_context(|| {
+                                format!("Length overflow, already at length {}", self.length)
+                            })?;
                     }
                     Atom::LengthDecr => {
                         self.length =
                             NonZeroU8::new(u8::from(self.length) / NonZeroU8::new(2).unwrap())
-                                .context("Length underflow")?;
+                                .with_context(|| {
+                                    format!("Length underflow, already at length {}", self.length)
+                                })?;
                     }
                     _ => unreachable!("Loops and tuplets should be flattened by the NoteIterator"),
                 };

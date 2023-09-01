@@ -47,7 +47,7 @@ impl Decoder {
     pub(super) fn new(bpm: NonZeroU16) -> Self {
         Decoder {
             bpm,
-            octave: 4,
+            octave: 3,
             length: NonZeroU8::new(4).unwrap(),
             volume: 100,
             remainder: 0,

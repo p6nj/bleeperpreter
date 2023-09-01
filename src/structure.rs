@@ -1,3 +1,5 @@
+pub(crate) use self::de::Atom;
+pub(super) use self::de::Signal;
 use anyhow::{Ok, Result};
 use derive_new::new;
 use serde::Deserialize;
@@ -5,10 +7,8 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::num::{NonZeroU16, NonZeroUsize};
 
-pub(crate) use self::de::Atom;
-use self::de::Signal;
-
 mod de;
+mod default;
 
 pub(crate) const SAMPLE_RATE: u32 = 48000;
 

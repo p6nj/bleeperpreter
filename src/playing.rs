@@ -14,7 +14,7 @@ pub(crate) fn play(mix: MixedRoot) -> Result<()> {
                     let source = SamplesBuffer::new(1, SAMPLE_RATE, track_data.to_owned());
                     let duration = source.total_duration().unwrap();
                     stream_handle.play_raw(source)?;
-                    println!("{} - {}", album, track);
+                    println!(r#"{} - "{}""#, album, track);
                     std::thread::sleep(duration);
                     Ok(())
                 })?;

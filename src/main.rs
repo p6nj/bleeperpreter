@@ -7,23 +7,10 @@ mod saving;
 mod structure;
 
 use anyhow::Result;
-use clap::Parser;
-use cli::{Cli, Command};
-use playing::play;
-use saving::save;
-use serde_json::from_str;
-use std::fs::read_to_string;
-use structure::Root;
+use cli::Cli;
 
 fn main() -> Result<()> {
-    let args = Cli::parse();
-    match args.cmd {
-        Command::Save { r#in, out } => save(
-            from_str::<Root>(read_to_string(r#in)?.as_str())?.mix()?,
-            out,
-        ),
-        Command::Play { r#in } => play(from_str::<Root>(read_to_string(r#in)?.as_str())?.mix()?),
-    }
+    Cli::look_what_to_do_and_do_it()
 }
 
 /* Help for expressions:
