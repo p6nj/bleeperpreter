@@ -15,7 +15,7 @@ pub(super) struct Cli {
 }
 
 #[derive(Subcommand)]
-pub(super) enum Command {
+enum Command {
     /// Generate a directory tree of generated wav files
     Save {
         /// JSON album path
