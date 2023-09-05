@@ -1,40 +1,19 @@
-use crate::{mixing::MixedRoot, structure::SAMPLE_RATE};
+use crate::{mixing::Samples, structure::SAMPLE_RATE};
 use anyhow::{Ok, Result};
 use hound::{SampleFormat, WavSpec};
-use std::{fs::create_dir, path::Path};
+use std::path::Path;
 
-/// Saves a mixed root structure as a file structure in the given directory.
-/// Albums are subdirectories named "`{ARTIST} - {ALBUM}`", tracks are wav files.
-pub fn save<P: AsRef<Path>>(mix: MixedRoot, dir: P) -> Result<()> {
+pub fn save<P: AsRef<Path>>(mix: Samples, path: P) -> Result<()> {
     let spec = WavSpec {
         channels: 1,
         sample_rate: SAMPLE_RATE,
         bits_per_sample: 16,
         sample_format: SampleFormat::Int,
     };
+    let filename = path.as_ref().with_extension("wav");
+    let mut writer = hound::WavWriter::create(filename, spec)?;
     mix.iter()
-        .try_for_each(|(album, (artist, album_data))| -> Result<()> {
-            let album_dir = dir.as_ref().join(format!("{} - {}", artist, album));
-            mkdir(&album_dir)?;
-            album_data
-                .iter()
-                .try_for_each(|(track, track_data)| -> Result<()> {
-                    let filename = album_dir.join(track).with_extension("wav");
-                    let mut writer = hound::WavWriter::create(filename, spec)?;
-                    track_data
-                        .iter()
-                        .map(|sample| (sample * (i16::MAX as f32)) as i16)
-                        .try_for_each(|sample| writer.write_sample(sample))?;
-                    Ok(())
-                })?;
-            Ok(())
-        })?;
-    Ok(())
-}
-
-fn mkdir<P: AsRef<Path>>(path: P) -> Result<()> {
-    if !path.as_ref().exists() {
-        create_dir(path)?;
-    };
+        .map(|sample| (sample * (i16::MAX as f32)) as i16)
+        .try_for_each(|sample| writer.write_sample(sample))?;
     Ok(())
 }

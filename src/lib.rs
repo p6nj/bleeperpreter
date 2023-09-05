@@ -20,4 +20,4 @@ mod structure;
 
 pub use playing::play;
 pub use saving::save;
-pub use structure::{Root, Signal};
+pub use structure::{Channel, Notes, Signal, Track};

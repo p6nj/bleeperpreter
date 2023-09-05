@@ -1,6 +1,8 @@
+use crate::structure::Track;
+
 use super::playing::play;
 use super::saving::save;
-use super::structure::{Root, Signal};
+use super::structure::Signal;
 use anyhow::Result;
 use clap::{arg, Parser, Subcommand};
 use meval::Expr;
@@ -44,32 +46,17 @@ impl Cli {
     pub(super) fn look_what_to_do_and_do_it() -> Result<()> {
         match Self::parse().cmd {
             Command::Save { r#in, out } => save(
-                from_str::<Root>(read_to_string(r#in)?.as_str())?.mix()?,
+                from_str::<Track>(read_to_string(r#in)?.as_str())?.mix()?,
                 out,
             ),
             Command::Play { r#in } => {
-                play(from_str::<Root>(read_to_string(r#in)?.as_str())?.mix()?)
+                play(from_str::<Track>(read_to_string(r#in)?.as_str())?.mix()?)
             }
             Command::Try { expr } => play(
                 {
-                    let mut custom = Root::default();
-                    custom
-                        .0
-                        .iter_mut()
-                        .next()
-                        .unwrap()
-                        .1
-                        .tracks
-                        .iter_mut()
-                        .next()
-                        .unwrap()
-                        .1
-                        .channels
-                        .iter_mut()
-                        .next()
-                        .unwrap()
-                        .1
-                        .signal = Signal(Expr::from_str(&expr)?);
+                    let mut custom = Track::default();
+                    custom.channels.iter_mut().next().unwrap().signal =
+                        Signal(Expr::from_str(&expr)?);
                     custom
                 }
                 .mix()?,

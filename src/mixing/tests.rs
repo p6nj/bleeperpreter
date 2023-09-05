@@ -1,4 +1,4 @@
-use crate::{mixing::tests::helpers::custom_mask, structure::Root};
+use crate::{mixing::tests::helpers::custom_mask, structure::Track};
 use serde_json::from_str;
 mod helpers;
 use helpers::mixed_root;

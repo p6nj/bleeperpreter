@@ -1,24 +1,17 @@
 {
-    "My First Album": {
-        "artist": "me",
-        "tracks": {
-            "My First Song": {
-                "BPM": 60,
-                "channels": {
-                    "piano": {
-                        "signal": "sin(2*pi*f*t)",
-                        "set": "aAbcCdDefFgG",
-                        "score": "@4$4!100 .cc",
-                        "tuning": 442
-                    },
-                    "synth": {
-                        "signal": "signum(sin(2*pi*f*t))",
-                        "set": "aAbcCdDefFgG",
-                        "tuning": 442,
-                        "score": "@4$4!100 a.a"
-                    }
-                }
-            }
+    "BPM": 60,
+    "channels": [
+        {
+            "signal": "sin(2*pi*f*t)",
+            "set": "aAbcCdDefFgG",
+            "score": "@4$4!100 .cc",
+            "tuning": 442
+        },
+        {
+            "signal": "signum(sin(2*pi*f*t))",
+            "set": "aAbcCdDefFgG",
+            "tuning": 442,
+            "score": "@4$4!100 a.a"
         }
-    }
+    ]
 }

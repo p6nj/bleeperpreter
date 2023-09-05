@@ -5,27 +5,11 @@ use std::num::{NonZeroU16, NonZeroU8, NonZeroUsize};
 mod decoder;
 
 impl structure::Track {
-    fn process(&mut self) -> Result<Track> {
+    pub(super) fn process(&mut self) -> Result<Vec<Samples>> {
         self.channels
             .par_iter_mut()
-            .map(|(name, channel)| -> Result<(String, Samples)> {
-                Ok((name.clone(), channel.process(self.bpm)?))
-            })
-            .collect::<Result<Track>>()
-    }
-}
-
-impl structure::Album {
-    pub(super) fn process(&mut self) -> Result<Album> {
-        Ok((
-            self.artist.clone(),
-            self.tracks
-                .iter_mut()
-                .map(|(name, track)| -> Result<(String, Track)> {
-                    Ok((name.clone(), track.process()?))
-                })
-                .collect::<Result<HashMap<String, Track>>>()?,
-        ))
+            .map(|channel| -> Result<Samples> { Ok(channel.process(self.bpm)?) })
+            .collect::<Result<Vec<Samples>>>()
     }
 }
 

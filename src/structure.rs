@@ -3,7 +3,6 @@ pub use self::de::Signal;
 use anyhow::{Ok, Result};
 use derive_new::new;
 use serde::Deserialize;
-use std::collections::HashMap;
 use std::fmt::Debug;
 use std::num::{NonZeroU16, NonZeroUsize};
 
@@ -12,20 +11,11 @@ mod default;
 
 pub(crate) const SAMPLE_RATE: u32 = 48000;
 
-#[derive(PartialEq, Debug, Deserialize)]
-pub struct Root(pub HashMap<String, Album>);
-
-#[derive(new, PartialEq, Debug, Deserialize)]
-pub struct Album {
-    pub artist: String,
-    pub tracks: HashMap<String, Track>,
-}
-
 #[derive(new, PartialEq, Debug, Deserialize)]
 pub struct Track {
     #[serde(rename = "BPM")]
     pub bpm: NonZeroU16,
-    pub channels: HashMap<String, Channel>,
+    pub channels: Vec<Channel>,
 }
 
 #[derive(new, PartialEq, Debug, Clone)]

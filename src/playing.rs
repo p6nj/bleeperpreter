@@ -1,24 +1,13 @@
-use crate::{mixing::MixedRoot, structure::SAMPLE_RATE};
+use crate::{mixing::Samples, structure::SAMPLE_RATE};
 use anyhow::Result;
 use rodio::{buffer::SamplesBuffer, OutputStream, Source};
 
 /// Play an entire album, printing the name of each track as it plays. Uses [`rodio`](https://docs.rs/rodio) for the playback.
-pub fn play(mix: MixedRoot) -> Result<()> {
+pub fn play(mix: Samples) -> Result<()> {
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-    mix.iter()
-        .try_for_each(|(album, album_data)| -> Result<()> {
-            album_data
-                .1
-                .iter()
-                .try_for_each(|(track, track_data)| -> Result<()> {
-                    let source = SamplesBuffer::new(1, SAMPLE_RATE, track_data.to_owned());
-                    let duration = source.total_duration().unwrap();
-                    stream_handle.play_raw(source)?;
-                    println!(r#"{} - "{}""#, album, track);
-                    std::thread::sleep(duration);
-                    Ok(())
-                })?;
-            Ok(())
-        })?;
+    let source = SamplesBuffer::new(1, SAMPLE_RATE, mix);
+    let duration = source.total_duration().unwrap();
+    stream_handle.play_raw(source)?;
+    std::thread::sleep(duration);
     Ok(())
 }

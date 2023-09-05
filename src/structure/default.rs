@@ -5,26 +5,11 @@ use serde_json::from_str;
 
 use super::*;
 
-impl Default for Root {
-    fn default() -> Self {
-        Self(HashMap::from([("Default".to_string(), Album::default())]))
-    }
-}
-
-impl Default for Album {
-    fn default() -> Self {
-        Self {
-            artist: "Default".to_string(),
-            tracks: HashMap::from([("Default".to_string(), Track::default())]),
-        }
-    }
-}
-
 impl Default for Track {
     fn default() -> Self {
         Self {
             bpm: NonZeroU16::new(120).unwrap(),
-            channels: HashMap::from([(String::new(), Channel::default())]),
+            channels: vec![Channel::default()],
         }
     }
 }
