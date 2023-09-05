@@ -19,5 +19,5 @@ mod saving;
 mod structure;
 
 pub use playing::play;
-pub use saving::save;
+pub use saving::export;
 pub use structure::{Channel, Notes, Signal, Track};

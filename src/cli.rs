@@ -1,7 +1,7 @@
 use crate::structure::Track;
 
 use super::playing::play;
-use super::saving::save;
+use super::saving::export;
 use super::structure::Signal;
 use anyhow::Result;
 use clap::{arg, Parser, Subcommand};
@@ -20,7 +20,7 @@ pub(super) struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Generate a directory tree of generated wav files
-    Save {
+    Export {
         /// JSON album path
         #[arg(value_name = "JSON_FILE")]
         r#in: String,
@@ -45,7 +45,7 @@ enum Command {
 impl Cli {
     pub(super) fn look_what_to_do_and_do_it() -> Result<()> {
         match Self::parse().cmd {
-            Command::Save { r#in, out } => save(
+            Command::Export { r#in, out } => export(
                 from_str::<Track>(read_to_string(r#in)?.as_str())?.mix()?,
                 out,
             ),
