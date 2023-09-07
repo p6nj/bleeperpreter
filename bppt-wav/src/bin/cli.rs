@@ -7,7 +7,7 @@ use std::{fs::read_to_string, str::FromStr};
 
 /// Argument parser entry point
 #[derive(Parser)]
-#[clap(author, version, about, long_about = None)]
+#[clap(author, version, about="The BPPT / MML interpreter powered by math", long_about = None)]
 pub(crate) struct Cli {
     #[command(subcommand)]
     cmd: Command,

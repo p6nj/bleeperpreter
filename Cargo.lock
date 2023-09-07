@@ -89,6 +89,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c7d0618f0e0b7e8ff11427422b64564d5fb0be1940354bfe2e0529b18a9d9b8"
 
 [[package]]
+name = "apres"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56be0b916c193860f9ab12d4f880f1c2c7015c722e4c5ba367536ed0dc511c75"
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -140,6 +146,9 @@ dependencies = [
 [[package]]
 name = "bppt-midi"
 version = "0.1.0"
+dependencies = [
+ "apres",
+]
 
 [[package]]
 name = "bppt-wav"

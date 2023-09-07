@@ -8,3 +8,4 @@ name = "bppt-midi-cli"
 path = "src/bin/main.rs"
 
 [dependencies]
+apres = "0.3.0"
