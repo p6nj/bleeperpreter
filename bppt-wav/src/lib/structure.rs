@@ -1,6 +1,6 @@
-pub(crate) use self::de::Atom;
 pub use self::de::Signal;
 use anyhow::{Ok, Result};
+use bppt::Notes;
 use derive_new::new;
 use serde::Deserialize;
 use std::fmt::Debug;
@@ -16,12 +16,6 @@ pub struct Track {
     #[serde(rename = "BPM")]
     pub bpm: NonZeroU16,
     pub channels: Vec<Channel>,
-}
-
-#[derive(new, PartialEq, Debug, Clone)]
-pub struct Notes {
-    pub(crate) set: String,
-    pub(crate) score: Vec<Atom>,
 }
 
 impl Channel {

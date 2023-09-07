@@ -9,6 +9,8 @@ use nom::sequence::{pair, preceded};
 use nom::{Err, IResult};
 use std::num::{NonZeroU16, NonZeroU8, NonZeroUsize};
 
+use crate::structure::Atom;
+
 #[cfg(test)]
 mod tests;
 
@@ -26,23 +28,6 @@ const LOOP_IN: char = '(';
 const LOOP_OUT: char = ')';
 const TUP_IN: char = '[';
 const TUP_OUT: char = ']';
-
-#[derive(PartialEq, Debug, Clone)]
-pub enum Atom {
-    Octave(NonZeroU8),
-    Length(NonZeroU8),
-    Volume(u8),
-    Note(u8, NonZeroUsize),
-    Rest,
-    OctaveIncr,
-    OctaveDecr,
-    LengthIncr,
-    LengthDecr,
-    VolumeIncr,
-    VolumeDecr,
-    Loop(NonZeroU16, Vec<Atom>),
-    Tuplet(Vec<Atom>),
-}
 
 type R<'a> = Result<Atom, Err<Error<&'a str>>>;
 type LeResult<'a> = IResult<&'a str, Atom>;

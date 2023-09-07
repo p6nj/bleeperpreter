@@ -1,4 +1,4 @@
-use crate::structure::{self, Atom};
+use crate::structure;
 use anyhow::Result;
 
 pub(crate) type Samples = Vec<f32>;

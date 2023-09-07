@@ -1,0 +1,26 @@
+[package]
+name = "bppt-wav"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "bppt_wav"
+path = "src/lib/lib.rs"
+
+[[bin]]
+name = "bppt-wav-cli"
+path = "src/bin/cli.rs"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.3.21", features = ["derive"] }
+derive-new = "0.5"
+dirs = "5.0"
+hound = "3.5"
+lazy-regex = { version = "3.0.1", features = ["perf"] }
+meval = { version = "0.2", features = ["serde"] }
+rayon = "1.7"
+rodio = { version = "0.17", default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bppt = { path = "../bppt" }

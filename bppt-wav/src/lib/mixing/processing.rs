@@ -1,5 +1,4 @@
 use super::*;
-use anyhow::Context;
 use rayon::prelude::{IntoParallelRefMutIterator, ParallelIterator};
 use std::num::{NonZeroU16, NonZeroU8, NonZeroUsize};
 mod decoder;

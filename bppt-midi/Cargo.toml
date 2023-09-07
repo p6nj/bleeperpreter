@@ -1,0 +1,10 @@
+[package]
+name = "bppt-midi"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "bppt-midi-cli"
+path = "src/bin/main.rs"
+
+[dependencies]

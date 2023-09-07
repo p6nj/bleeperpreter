@@ -1,4 +1,6 @@
 use super::*;
+use crate::structure::Atom;
+
 #[test]
 fn octave() {
     assert_eq!(

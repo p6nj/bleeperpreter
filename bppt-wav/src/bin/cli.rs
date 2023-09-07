@@ -1,9 +1,5 @@
-use crate::structure::Track;
-
-use super::playing::play;
-use super::saving::export;
-use super::structure::Signal;
 use anyhow::Result;
+use bppt_wav::{export, play, Signal, Track};
 use clap::{arg, Parser, Subcommand};
 use meval::Expr;
 use serde_json::from_str;
@@ -12,7 +8,7 @@ use std::{fs::read_to_string, str::FromStr};
 /// Argument parser entry point
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
-pub(super) struct Cli {
+pub(crate) struct Cli {
     #[command(subcommand)]
     cmd: Command,
 }
@@ -43,7 +39,7 @@ enum Command {
 }
 
 impl Cli {
-    pub(super) fn look_what_to_do_and_do_it() -> Result<()> {
+    pub(crate) fn look_what_to_do_and_do_it() -> Result<()> {
         match Self::parse().cmd {
             Command::Export { r#in, out } => export(
                 from_str::<Track>(read_to_string(r#in)?.as_str())?.mix()?,
@@ -64,3 +60,16 @@ impl Cli {
         }
     }
 }
+
+fn main() -> Result<()> {
+    Cli::look_what_to_do_and_do_it()
+}
+
+/* Help for expressions:
+ * https://thewolfsound.com/sine-saw-square-triangle-pulse-basic-waveforms-in-synthesis/
+ * https://github.com/rekka/meval-rs#supported-expressions
+ * https://www.desmos.com/calculator
+ * sine with vibrato (FM): sin((2*pi*f*t)-cos(2*pi*8*t))
+ * easy sine-like triangular wave: (2/pi)*signum(sin(t))*(t%pi)-signum(sin(t))
+ * FM for any 2pi-periodic (sine-like) function: https://www.desmos.com/calculator/hfxv6h1n9n
+ */

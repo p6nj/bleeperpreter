@@ -24,20 +24,6 @@ impl Default for Channel {
     }
 }
 
-impl Default for Notes {
-    fn default() -> Self {
-        from_str(
-            r#"
-        {
-            "set": "aAbcCdDefFgG",
-            "score": "cccd'ed`cedd''c"
-        }
-        "#,
-        )
-        .unwrap()
-    }
-}
-
 impl Default for Signal {
     fn default() -> Self {
         Self(Expr::from_str("sin(2*pi*f*t)").unwrap())

@@ -1,3 +1,5 @@
+use crate::structure::Atom;
+
 use super::*;
 
 impl<'de> Deserialize<'de> for Notes {

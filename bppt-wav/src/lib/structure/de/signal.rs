@@ -1,11 +1,14 @@
-use super::*;
 use lazy_regex::{regex_captures, regex_replace_all};
+use meval::Expr;
+use serde::de::Error;
+use serde::Deserialize;
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests;
 
 #[derive(PartialEq, Debug, Clone)]
-pub struct Signal(pub(crate) Expr);
+pub struct Signal(pub Expr);
 
 impl<'de> Deserialize<'de> for Signal {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
