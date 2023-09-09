@@ -1,7 +1,5 @@
-use std::str::FromStr;
-
 use meval::Expr;
-use serde_json::from_str;
+use std::str::FromStr;
 
 use super::*;
 

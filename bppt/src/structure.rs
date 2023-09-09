@@ -25,6 +25,7 @@ pub enum Atom {
     LengthDecr,
     VolumeIncr,
     VolumeDecr,
+    More,
     Loop(NonZeroU16, Vec<Atom>),
     Tuplet(Vec<Atom>),
 }

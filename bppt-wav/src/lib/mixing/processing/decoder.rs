@@ -53,9 +53,12 @@ impl Decoder {
                                     format!("Length underflow, already at length {}", self.length)
                                 })?;
                     }
-                    _ => unreachable!(
+                    Atom::Loop(_, _) | Atom::Tuplet(_) => unreachable!(
                         "Loops and tuplets should be flattened by the FlattenedNoteIterator"
                     ),
+                    Atom::More => {
+                        unimplemented!("Sorry, '+' operator is unimplemented at the moment")
+                    }
                 };
                 Ok(None)
             })

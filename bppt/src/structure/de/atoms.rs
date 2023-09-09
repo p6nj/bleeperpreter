@@ -28,6 +28,7 @@ const LOOP_IN: char = '(';
 const LOOP_OUT: char = ')';
 const TUP_IN: char = '[';
 const TUP_OUT: char = ']';
+const MORE: char = '+';
 
 type R<'a> = Result<Atom, Err<Error<&'a str>>>;
 type LeResult<'a> = IResult<&'a str, Atom>;
@@ -93,6 +94,10 @@ fn volumedecr(i: &str) -> LeResult {
     value(Atom::VolumeDecr, char(VOLUMEDECR))(i)
 }
 
+fn more(i: &str) -> LeResult {
+    value(Atom::More, char(MORE))(i)
+}
+
 fn junk(i: &str) -> IResult<&str, ()> {
     value((), multispace0)(i)
 }
@@ -112,6 +117,7 @@ fn atom<'a>(noteset: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, Atom> {
             lengthdecr,
             volumeincr,
             volumedecr,
+            more,
             r#loop(noteset),
             tuplet(noteset),
         )),

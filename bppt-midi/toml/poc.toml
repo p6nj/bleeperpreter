@@ -1,0 +1,9 @@
+[global]
+bpm = 60
+soundfont = "soundfont/soundfont.sf2"
+
+[piano]
+bank = 0
+instrument = 0
+set = "cCdDefFgGaAb"
+score = "ccd"
