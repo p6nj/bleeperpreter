@@ -6,4 +6,4 @@ soundfont = "soundfont/soundfont.sf2"
 bank = 0
 instrument = 0
 set = "cCdDefFgGaAb"
-score = "ccd"
+score = "ccd.c"
