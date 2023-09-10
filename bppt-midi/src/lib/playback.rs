@@ -6,7 +6,7 @@ use tinyaudio::{run_output_device, OutputDeviceParameters};
 mod bytes_utils;
 use bytes_utils::as_bytes;
 
-pub fn play(midi: &MIDI, font: SoundFont, tempo: usize) {
+pub fn play(midi: &MIDI, font: SoundFont, bpm: u16) {
     // Setup the audio output.
     let params = OutputDeviceParameters {
         channels_count: 1,
@@ -44,11 +44,12 @@ pub fn play(midi: &MIDI, font: SoundFont, tempo: usize) {
     .unwrap();
 
     // Wait for 10 seconds.
-    sleep(Duration::from_micros(
+    sleep(Duration::from_secs_f64(
         ((0..midi.count_tracks())
             .map(|n| midi.get_track_length(n))
             .max()
-            .unwrap()
-            * tempo) as u64,
+            .unwrap() as f64
+            - 1f64)
+            / ((bpm as f64) * 8f64),
     ));
 }

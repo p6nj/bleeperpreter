@@ -35,6 +35,6 @@ fn main() {
     play(
         &midi_file,
         SoundFont::new(&mut File::open(song.global.soundfont.as_str()).unwrap()).unwrap(),
-        bpm_to_tempo(song.global.bpm as usize),
+        song.global.bpm,
     );
 }
