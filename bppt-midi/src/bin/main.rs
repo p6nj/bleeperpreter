@@ -56,7 +56,8 @@ impl Debug for Channel {
         f.debug_struct("Channel")
             .field("bank", &self.bank)
             .field("instrument", &self.instrument)
-            .field("notes", &"da notes")
+            .field("set", &self.notes.set)
+            .field("score", &"...")
             .finish()
     }
 }

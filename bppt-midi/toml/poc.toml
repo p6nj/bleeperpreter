@@ -7,3 +7,9 @@ bank = 0
 instrument = 0
 set = "cCdDefFgGaAb"
 score = "ccd.c"
+
+[sax]
+bank = 0
+instrument = 0
+set = "cCdDefFgGaAb"
+score = "ccd.c"
