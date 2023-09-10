@@ -24,10 +24,13 @@ fn main() {
     // // Save it to a file
     // midi.save("beep.mid");
 
-    println!(
-        "{:?}",
-        from_str::<Song>(&read_to_string("bppt-midi/toml/poc.toml").unwrap()).unwrap()
-    );
+    // println!(
+    //     "{:?}",
+    //     from_str::<Song>(&read_to_string("bppt-midi/toml/poc.toml").unwrap()).unwrap()
+    // );
+
+    let midi_file = MIDI::from_path("C at 60 BPM.mid").unwrap();
+    dbg!(midi_file);
 }
 
 #[derive(Deserialize, new, Debug)]
