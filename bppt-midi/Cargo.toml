@@ -3,6 +3,10 @@ name = "bppt-midi"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "bppt_midi"
+path = "src/lib/lib.rs"
+
 [[bin]]
 name = "bppt-midi-cli"
 path = "src/bin/main.rs"

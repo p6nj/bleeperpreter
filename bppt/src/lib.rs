@@ -1,5 +1,5 @@
-#![warn(missing_docs)]
-#![warn(missing_doc_code_examples)]
+// #![warn(missing_docs)]
+// #![warn(missing_doc_code_examples)]
 
 //! <img src="https://raw.githubusercontent.com/p6nj/bleeperpreter/main/icon/iconx4.png?sanitize=true" alt="bppt logo" align="right">
 //!
