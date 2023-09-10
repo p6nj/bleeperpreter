@@ -1,6 +1,6 @@
 [global]
 bpm = 60
-soundfont = "soundfont/soundfont.sf2"
+soundfont = "bppt-midi/soundfont/soundfont.sf2"
 
 [piano]
 bank = 0
