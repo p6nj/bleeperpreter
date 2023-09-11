@@ -9,7 +9,7 @@ path = "src/lib/lib.rs"
 
 [[bin]]
 name = "bppt-midi-cli"
-path = "src/bin/main.rs"
+path = "src/bin/cli.rs"
 
 [dependencies]
 apres = "0.3.0"
@@ -19,3 +19,4 @@ tinyaudio = "0.1.2"
 bppt = { path = "../bppt" }
 serde = { version = "1.0.188", features = ["derive"] }
 derive-new = "0.5.9"
+anyhow = "1.0.75"

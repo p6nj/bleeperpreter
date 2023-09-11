@@ -1,3 +1,4 @@
+use anyhow::Result;
 use apres::MIDI;
 use basic_toml;
 use bppt_midi::playback::play;
@@ -6,7 +7,7 @@ use rustysynth::SoundFont;
 use std::fs::{read_to_string, File};
 use std::path::Path;
 
-fn main() {
+fn main() -> Result<()> {
     // // Create an empty MIDI file.
     // let mut midi = MIDI::new();
 
@@ -25,16 +26,13 @@ fn main() {
     // );
 
     // let midi_file = MIDI::from_path("bppt-midi/midi/2 parts.mid").unwrap();
-    let song: Song = basic_toml::from_str(
-        read_to_string(Path::new("bppt-midi/toml/poc.toml"))
-            .unwrap()
-            .as_str(),
-    )
-    .unwrap();
+    let song: Song =
+        basic_toml::from_str(read_to_string(Path::new("bppt-midi/toml/poc.toml"))?.as_str())?;
     println!("{:?}", song);
     // play(
     //     &midi_file,
     //     SoundFont::new(&mut File::open(song.global.soundfont.as_str()).unwrap()).unwrap(),
     //     song.global.bpm,
     // );
+    Ok(())
 }

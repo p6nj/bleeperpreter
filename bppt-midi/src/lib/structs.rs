@@ -1,10 +1,7 @@
 use bppt::Notes;
 use derive_new::new;
 use serde::Deserialize;
-use std::{
-    collections::HashMap,
-    fmt::{Debug, Formatter},
-};
+use std::{collections::HashMap, fmt::Debug};
 
 #[derive(Deserialize, new, Debug)]
 pub struct Song {
