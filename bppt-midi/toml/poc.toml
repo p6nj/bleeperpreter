@@ -1,15 +1,19 @@
 [global]
 bpm = 60
 soundfont = "bppt-midi/soundfont/soundfont.sf2"
+signature = "4/4"                               # facultative
+key = "C"                                       # facultative
 
 [piano]
 bank = 0
 instrument = 0
 set = "cCdDefFgGaAb"
 score = "ccd.c"
+pan = 64             # facultative
 
 [sax]
 bank = 0
-instrument = 0
+instrument = 66
 set = "cCdDefFgGaAb"
-score = "ccd.c"
+score = "eef.e"
+volume = 100         # facultative
