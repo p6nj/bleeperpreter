@@ -1,13 +1,16 @@
 use bppt::Notes;
 use derive_new::new;
 use serde::Deserialize;
+use serde_with::serde_as;
 use std::{collections::HashMap, fmt::Debug};
 
+#[serde_as]
 #[derive(Deserialize, new, Debug)]
 pub struct Song {
     pub global: Global,
+    #[serde_as(as = "HashMap<_, _>")]
     #[serde(flatten)]
-    pub channels: HashMap<String, Channel>,
+    pub channels: Vec<(String, Channel)>,
 }
 
 #[derive(new, Debug)]

@@ -20,3 +20,4 @@ bppt = { path = "../bppt" }
 serde = { version = "1.0.188", features = ["derive"] }
 derive-new = "0.5.9"
 anyhow = "1.0.75"
+serde_with = "3.3.0"

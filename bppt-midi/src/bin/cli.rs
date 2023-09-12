@@ -1,10 +1,8 @@
 use anyhow::Result;
-use apres::MIDI;
 use basic_toml;
 use bppt_midi::playback::play;
 use bppt_midi::structs::Song;
-use rustysynth::SoundFont;
-use std::fs::{read_to_string, File};
+use std::fs::read_to_string;
 use std::path::Path;
 
 fn main() -> Result<()> {
