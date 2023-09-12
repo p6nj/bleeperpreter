@@ -40,6 +40,7 @@ impl Song {
         let mut mid = MIDI::new();
         self.setup(&mut mid);
         // render every channel by invoking its setup method after inserting a track name
+        // after that add an end of track event
         mid
     }
 }
