@@ -1,4 +1,5 @@
 use anyhow::Result;
+use apres::MIDI;
 use basic_toml;
 use bppt_midi::playback::play;
 use bppt_midi::structs::Song;
@@ -23,10 +24,11 @@ fn main() -> Result<()> {
     //     from_str::<Song>(&read_to_string("bppt-midi/toml/poc.toml").unwrap()).unwrap()
     // );
 
-    // let midi_file = MIDI::from_path("bppt-midi/midi/2 parts.mid").unwrap();
-    let song: Song =
-        basic_toml::from_str(read_to_string(Path::new("bppt-midi/toml/poc.toml"))?.as_str())?;
-    println!("{:?}", song);
+    let midi_file = MIDI::from_path("bppt-midi/midi/2 parts.mid").unwrap();
+    dbg!(midi_file);
+    // let song: Song =
+    //     basic_toml::from_str(read_to_string(Path::new("bppt-midi/toml/poc.toml"))?.as_str())?;
+    // println!("{:?}", song);
     // play(
     //     &midi_file,
     //     SoundFont::new(&mut File::open(song.global.soundfont.as_str()).unwrap()).unwrap(),
