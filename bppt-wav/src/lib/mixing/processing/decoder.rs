@@ -33,7 +33,10 @@ impl Decoder {
                             )));
                         }
                     }
-                    Atom::Rest => return Ok(Some(vec![0f32; self.real_length()?])),
+                    Atom::Rest(tup) => {
+                        self.tup = tup;
+                        return Ok(Some(vec![0f32; self.real_length()?]));
+                    }
                     Atom::OctaveIncr => self.octave += 1,
                     Atom::OctaveDecr => self.octave -= 1,
                     Atom::VolumeIncr => self.volume += 1,

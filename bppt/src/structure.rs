@@ -18,7 +18,7 @@ pub enum Atom {
     Length(NonZeroU8),
     Volume(u8),
     Note(u8, NonZeroUsize),
-    Rest,
+    Rest(NonZeroUsize),
     OctaveIncr,
     OctaveDecr,
     LengthIncr,

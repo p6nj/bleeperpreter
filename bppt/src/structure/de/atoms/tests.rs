@@ -31,7 +31,10 @@ fn note() {
 }
 #[test]
 fn rest() {
-    assert_eq!(Ok(("", Atom::Rest)), super::rest(&format!("{REST}")));
+    assert_eq!(
+        Ok(("", Atom::Rest(NonZeroUsize::new(1).unwrap()))),
+        super::rest(&format!("{REST}"))
+    );
 }
 #[test]
 fn octave_incr() {

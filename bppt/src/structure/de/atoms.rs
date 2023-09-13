@@ -67,7 +67,7 @@ fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, Atom> {
 }
 
 fn rest(i: &str) -> LeResult {
-    value(Atom::Rest, char(REST))(i)
+    value(Atom::Rest(NonZeroUsize::new(1).unwrap()), char(REST))(i)
 }
 
 fn octaveincr(i: &str) -> LeResult {

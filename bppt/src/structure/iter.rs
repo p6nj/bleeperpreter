@@ -41,6 +41,10 @@ impl Iterator for FlattenedNoteIterator {
                                     *n,
                                     tup.saturating_mul(NonZeroUsize::new(length).unwrap()),
                                 );
+                            } else if let Atom::Rest(tup) = atom {
+                                return Atom::Rest(
+                                    tup.saturating_mul(NonZeroUsize::new(length).unwrap()),
+                                );
                             }
                             atom.clone()
                         })
