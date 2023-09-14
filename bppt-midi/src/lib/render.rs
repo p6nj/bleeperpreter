@@ -88,9 +88,7 @@ impl Channel {
         append(apres::MIDIEvent::ChorusLevel(0, 0));
     }
     fn render(self, mid: &mut MIDI) {
-        let mut append = |e, w| {
-            mid.push_event(0, w, e);
-        };
+        let mut id = None;
         let mut context = Env::new();
         self.notes.flat_iter().for_each(|atom| match atom {
             bppt::Atom::Octave(o) => context.octave = u8::from(o),
@@ -98,14 +96,20 @@ impl Channel {
             bppt::Atom::V(v) => context.velocity = v,
             bppt::Atom::Note(n, t) => {
                 context.tup = t;
-                append(
-                    apres::MIDIEvent::NoteOn(0, n * context.octave, context.velocity),
+                mid.push_event(
+                    0,
                     context.length(),
-                )
+                    apres::MIDIEvent::NoteOn(0, n * context.octave, context.velocity),
+                );
+                mid.push_event(
+                    0,
+                    context.length(),
+                    apres::MIDIEvent::NoteOff(0, n * context.octave, 0),
+                );
             }
             bppt::Atom::Rest(t) => {
                 context.tup = t;
-                append(apres::MIDIEvent::NoteOff(0, 0, 0), context.length())
+                mid.push_event(0, 0, apres::MIDIEvent::NoteOff(0, 0, 0));
             }
             bppt::Atom::OctaveIncr => context.octave += 1,
             bppt::Atom::OctaveDecr => context.octave -= 1,
@@ -116,10 +120,21 @@ impl Channel {
                 context.length = NonZeroU8::new(u8::from(context.length) - 1).unwrap()
             }
             bppt::Atom::VIncr => context.velocity += 1,
-            bppt::Atom::VDecr => todo!(),
-            bppt::Atom::More => todo!(),
-            bppt::Atom::Loop(_, _) => todo!(),
-            bppt::Atom::Tuplet(_) => todo!(),
+            bppt::Atom::VDecr => context.velocity -= 1,
+            bppt::Atom::More => {
+                if let Some(id) = id {
+                    let event = mid.get_event(id).unwrap();
+                    mid.push_event(
+                        0,
+                        mid.get_event_position(id).unwrap().1 + context.length(),
+                        event,
+                    );
+                    mid.move_event(100, 0, id);
+                }
+            }
+            bppt::Atom::Loop(_, _) | bppt::Atom::Tuplet(_) => {
+                unreachable!("loops and tuplets shouldn't be here")
+            }
         });
     }
 }
