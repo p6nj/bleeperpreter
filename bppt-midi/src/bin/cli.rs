@@ -20,6 +20,7 @@ fn main() -> Result<()> {
     let song =
         basic_toml::from_str::<Song>(&read_to_string("bppt-midi/toml/poc.toml").unwrap()).unwrap();
     let rendered = song.render();
+    dbg!(&rendered);
 
     // let midi_file = MIDI::from_path("bppt-midi/midi/2 parts.mid").unwrap();
     // println!("{:?}", song);

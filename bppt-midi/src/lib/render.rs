@@ -1,4 +1,7 @@
-use crate::structs::{Channel, Song};
+use crate::{
+    misc::bpm_to_tempo,
+    structs::{Channel, Song},
+};
 use apres::MIDI;
 use std::num::{NonZeroU8, NonZeroUsize};
 
@@ -18,7 +21,7 @@ impl Song {
         if let Some(key) = &self.global.key {
             append(apres::MIDIEvent::KeySignature(key.clone()));
         }
-        append(apres::MIDIEvent::SetTempo(self.global.bpm.into()));
+        append(apres::MIDIEvent::SetTempo(bpm_to_tempo(self.global.bpm)));
         append(apres::MIDIEvent::AllControllersOff(0));
         append(apres::MIDIEvent::ProgramChange(
             first.1.bank,
@@ -97,6 +100,7 @@ impl Channel {
     }
     fn render(&self, mid: &mut MIDI, track: usize) {
         let mut id = None;
+        let mut silence = 0;
         let mut context = Env::new();
         self.notes.clone().flat_iter().for_each(|atom| match atom {
             bppt::Atom::Octave(o) => context.octave = u8::from(o),
@@ -104,20 +108,22 @@ impl Channel {
             bppt::Atom::V(v) => context.velocity = v,
             bppt::Atom::Note(n, t) => {
                 context.tup = t;
+                let note = n + 12 * (context.octave + 2);
                 mid.push_event(
                     track,
-                    context.length(),
-                    apres::MIDIEvent::NoteOn(0, n * context.octave, context.velocity),
+                    silence,
+                    apres::MIDIEvent::NoteOn(0, note, context.velocity),
                 );
+                silence = 0;
                 id = Some(mid.push_event(
                     track,
-                    context.length(),
-                    apres::MIDIEvent::NoteOff(0, n * context.octave, 0),
+                    context.length() - 1,
+                    apres::MIDIEvent::NoteOff(0, note, 0),
                 ));
             }
             bppt::Atom::Rest(t) => {
                 context.tup = t;
-                mid.push_event(track, 0, apres::MIDIEvent::NoteOff(0, 0, 0));
+                silence += context.length();
             }
             bppt::Atom::OctaveIncr => context.octave += 1,
             bppt::Atom::OctaveDecr => context.octave -= 1,

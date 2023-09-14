@@ -1,3 +1,4 @@
+mod misc;
 mod playback;
 mod render;
 mod structs;
