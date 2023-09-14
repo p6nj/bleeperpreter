@@ -54,7 +54,7 @@ fn length(i: &str) -> LeResult {
 }
 
 fn volume(i: &str) -> LeResult {
-    map_res(preceded(char(VOLUME), u8), move |n| R::Ok(Atom::Volume(n)))(i)
+    map_res(preceded(char(VOLUME), u8), move |n| R::Ok(Atom::V(n)))(i)
 }
 
 fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, Atom> {
@@ -87,11 +87,11 @@ fn lengthdecr(i: &str) -> LeResult {
 }
 
 fn volumeincr(i: &str) -> LeResult {
-    value(Atom::VolumeIncr, char(VOLUMEINCR))(i)
+    value(Atom::VIncr, char(VOLUMEINCR))(i)
 }
 
 fn volumedecr(i: &str) -> LeResult {
-    value(Atom::VolumeDecr, char(VOLUMEDECR))(i)
+    value(Atom::VDecr, char(VOLUMEDECR))(i)
 }
 
 fn more(i: &str) -> LeResult {

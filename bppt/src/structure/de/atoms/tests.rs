@@ -18,7 +18,7 @@ fn length() {
 #[test]
 fn volume() {
     assert_eq!(
-        Ok(("", Atom::Volume(100))),
+        Ok(("", Atom::V(100))),
         super::volume(&format!("{VOLUME}100"))
     );
 }
@@ -67,14 +67,14 @@ fn length_decr() {
 #[test]
 fn volume_incr() {
     assert_eq!(
-        Ok(("", Atom::VolumeIncr)),
+        Ok(("", Atom::VIncr)),
         super::volumeincr(&format!("{VOLUMEINCR}"))
     );
 }
 #[test]
 fn volume_decr() {
     assert_eq!(
-        Ok(("", Atom::VolumeDecr)),
+        Ok(("", Atom::VDecr)),
         super::volumedecr(&format!("{VOLUMEDECR}"))
     );
 }

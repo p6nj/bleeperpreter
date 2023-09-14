@@ -20,7 +20,7 @@ impl Decoder {
                     Atom::Length(l) => {
                         self.length = l;
                     }
-                    Atom::Volume(v) => self.volume = v,
+                    Atom::V(v) => self.volume = v,
                     Atom::Note(n, tup) => {
                         self.tup = tup;
                         let length = self.real_length()?;
@@ -39,8 +39,8 @@ impl Decoder {
                     }
                     Atom::OctaveIncr => self.octave += 1,
                     Atom::OctaveDecr => self.octave -= 1,
-                    Atom::VolumeIncr => self.volume += 1,
-                    Atom::VolumeDecr => self.volume -= 1,
+                    Atom::VIncr => self.volume += 1,
+                    Atom::VDecr => self.volume -= 1,
                     Atom::LengthIncr => {
                         self.length = self
                             .length

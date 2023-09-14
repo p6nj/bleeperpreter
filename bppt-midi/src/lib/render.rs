@@ -95,7 +95,7 @@ impl Channel {
         self.notes.flat_iter().for_each(|atom| match atom {
             bppt::Atom::Octave(o) => context.octave = u8::from(o),
             bppt::Atom::Length(l) => context.length = l,
-            bppt::Atom::Volume(v) => context.velocity = v,
+            bppt::Atom::V(v) => context.velocity = v,
             bppt::Atom::Note(n, t) => {
                 context.tup = t;
                 append(
@@ -107,12 +107,16 @@ impl Channel {
                 context.tup = t;
                 append(apres::MIDIEvent::NoteOff(0, 0, 0), context.length())
             }
-            bppt::Atom::OctaveIncr => todo!(),
-            bppt::Atom::OctaveDecr => todo!(),
-            bppt::Atom::LengthIncr => todo!(),
-            bppt::Atom::LengthDecr => todo!(),
-            bppt::Atom::VolumeIncr => todo!(),
-            bppt::Atom::VolumeDecr => todo!(),
+            bppt::Atom::OctaveIncr => context.octave += 1,
+            bppt::Atom::OctaveDecr => context.octave -= 1,
+            bppt::Atom::LengthIncr => {
+                context.length = NonZeroU8::new(u8::from(context.length) + 1).unwrap()
+            }
+            bppt::Atom::LengthDecr => {
+                context.length = NonZeroU8::new(u8::from(context.length) - 1).unwrap()
+            }
+            bppt::Atom::VIncr => context.velocity += 1,
+            bppt::Atom::VDecr => todo!(),
             bppt::Atom::More => todo!(),
             bppt::Atom::Loop(_, _) => todo!(),
             bppt::Atom::Tuplet(_) => todo!(),
