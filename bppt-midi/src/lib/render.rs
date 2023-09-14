@@ -1,13 +1,9 @@
-use std::num::{NonZeroU8, NonZeroUsize};
-
 use crate::structs::{Channel, Song};
 use apres::MIDI;
+use std::num::{NonZeroU8, NonZeroUsize};
 
 impl Song {
     fn setup(&self, mid: &mut MIDI) {
-        if self.channels.is_empty() {
-            return;
-        }
         let first = self.channels.first().unwrap();
         mid.insert_event(0, 0, apres::MIDIEvent::TrackName(first.0.clone()));
         let mut append = |e| mid.push_event(0, 0, e);
@@ -40,9 +36,21 @@ impl Song {
 
     pub fn render(&self) -> MIDI {
         let mut mid = MIDI::new();
+        if self.channels.is_empty() {
+            return mid;
+        }
         self.setup(&mut mid);
         // render every channel by invoking its setup method after inserting a track name
-        // after that add the notes and an end of track event
+        self.channels.first().unwrap().1.render(&mut mid, 0);
+        self.channels
+            .iter()
+            .skip(1)
+            .enumerate()
+            .for_each(|(i, (name, channel))| {
+                mid.insert_event(i + 1, 0, apres::MIDIEvent::TrackName(name.clone()));
+                channel.setup(&mut mid);
+                channel.render(&mut mid, i + 1);
+            });
         mid
     }
 }
@@ -87,29 +95,29 @@ impl Channel {
         append(apres::MIDIEvent::EffectsLevel(0, 0));
         append(apres::MIDIEvent::ChorusLevel(0, 0));
     }
-    fn render(self, mid: &mut MIDI) {
+    fn render(&self, mid: &mut MIDI, track: usize) {
         let mut id = None;
         let mut context = Env::new();
-        self.notes.flat_iter().for_each(|atom| match atom {
+        self.notes.clone().flat_iter().for_each(|atom| match atom {
             bppt::Atom::Octave(o) => context.octave = u8::from(o),
             bppt::Atom::Length(l) => context.length = l,
             bppt::Atom::V(v) => context.velocity = v,
             bppt::Atom::Note(n, t) => {
                 context.tup = t;
                 mid.push_event(
-                    0,
+                    track,
                     context.length(),
                     apres::MIDIEvent::NoteOn(0, n * context.octave, context.velocity),
                 );
-                mid.push_event(
-                    0,
+                id = Some(mid.push_event(
+                    track,
                     context.length(),
                     apres::MIDIEvent::NoteOff(0, n * context.octave, 0),
-                );
+                ));
             }
             bppt::Atom::Rest(t) => {
                 context.tup = t;
-                mid.push_event(0, 0, apres::MIDIEvent::NoteOff(0, 0, 0));
+                mid.push_event(track, 0, apres::MIDIEvent::NoteOff(0, 0, 0));
             }
             bppt::Atom::OctaveIncr => context.octave += 1,
             bppt::Atom::OctaveDecr => context.octave -= 1,
@@ -129,12 +137,13 @@ impl Channel {
                         mid.get_event_position(id).unwrap().1 + context.length(),
                         event,
                     );
-                    mid.move_event(100, 0, id);
+                    mid.move_event(usize::MAX, 0, id);
                 }
             }
             bppt::Atom::Loop(_, _) | bppt::Atom::Tuplet(_) => {
                 unreachable!("loops and tuplets shouldn't be here")
             }
         });
+        mid.push_event(track, 0, apres::MIDIEvent::EndOfTrack);
     }
 }

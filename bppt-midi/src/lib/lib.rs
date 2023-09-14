@@ -1,4 +1,6 @@
-pub mod misc;
-pub mod playback;
-pub mod render;
-pub mod structs;
+mod playback;
+mod render;
+mod structs;
+
+pub use playback::play;
+pub use structs::Song;

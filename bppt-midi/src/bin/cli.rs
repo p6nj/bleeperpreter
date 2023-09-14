@@ -1,10 +1,8 @@
 use anyhow::Result;
-use apres::MIDI;
 use basic_toml;
-use bppt_midi::playback::play;
-use bppt_midi::structs::Song;
-use std::fs::read_to_string;
-use std::path::Path;
+use bppt_midi::{play, Song};
+use rustysynth::SoundFont;
+use std::fs::{read_to_string, File};
 
 fn main() -> Result<()> {
     // // Create an empty MIDI file.
@@ -19,18 +17,15 @@ fn main() -> Result<()> {
     // // Save it to a file
     // midi.save("beep.mid");
 
-    // println!(
-    //     "{:?}",
-    //     from_str::<Song>(&read_to_string("bppt-midi/toml/poc.toml").unwrap()).unwrap()
-    // );
+    let song =
+        basic_toml::from_str::<Song>(&read_to_string("bppt-midi/toml/poc.toml").unwrap()).unwrap();
+    let rendered = song.render();
 
-    let midi_file = MIDI::from_path("bppt-midi/midi/2 parts.mid").unwrap();
-    dbg!(midi_file);
-    // let song: Song =
-    //     basic_toml::from_str(read_to_string(Path::new("bppt-midi/toml/poc.toml"))?.as_str())?;
+    // let midi_file = MIDI::from_path("bppt-midi/midi/2 parts.mid").unwrap();
     // println!("{:?}", song);
+    rendered.save("test.mid");
     // play(
-    //     &midi_file,
+    //     &rendered,
     //     SoundFont::new(&mut File::open(song.global.soundfont.as_str()).unwrap()).unwrap(),
     //     song.global.bpm,
     // );
