@@ -102,7 +102,7 @@ impl Channel {
         let mut id = None;
         let mut silence = 0;
         let mut context = Env::new();
-        self.notes.clone().flat_iter().for_each(|atom| match atom {
+        self.notes.flat_iter().for_each(|atom| match atom {
             bppt::Atom::Octave(o) => context.octave = u8::from(o),
             bppt::Atom::Length(l) => context.length = l,
             bppt::Atom::V(v) => context.velocity = v,

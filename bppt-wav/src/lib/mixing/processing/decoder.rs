@@ -12,7 +12,6 @@ impl Decoder {
     ) -> Result<Vec<f32>> {
         Ok(channel
             .notes
-            .clone()
             .flat_iter()
             .map(|atom| {
                 match atom {

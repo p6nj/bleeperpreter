@@ -1,12 +1,8 @@
 use super::*;
 
 impl Notes {
-    pub fn flat_iter(self) -> FlattenedNoteIterator {
-        FlattenedNoteIterator({
-            let mut v = self.score;
-            v.reverse();
-            v
-        })
+    pub fn flat_iter(&self) -> FlattenedNoteIterator {
+        FlattenedNoteIterator(self.score.iter().rev().cloned().collect::<Vec<Atom>>())
     }
 }
 
