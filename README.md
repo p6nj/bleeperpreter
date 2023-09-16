@@ -40,7 +40,6 @@ cargo run -- try "sin(2*pi*f*t)" # to try a signal on the fly
 This project is a Rust workspace with the following members:
 - [bppt](bppt) - the core library
 - [bppt-wav](bppt-wav) - a pure sound backend with WAV output
-- [bppt-midi](bppt-midi) - a MIDI oriented backend with soundfont support
   
 Each implementation has examples (`./toml` or `./json`) and tests. The core library has a few tests as well. You can run all tests from the root of the project with:
 ```bash
@@ -59,7 +58,6 @@ Would you like to use this music language for something else ? Use the `Notes` o
 Put the `Notes` in a [`serde`](https://serde.rs/)-compatible deserializable structure, call your favorite deserializer ([`serde_json`](https://crates.io/crates/serde_json), [`basic-toml`](https://crates.io/crates/basic-toml)...) and build your own way of rendering notes with the `flat_iter` function.
 
 ## TODO
-- [ ] finish MIDI backend
 - [ ] add documentation
 - [ ] publish to crates.io
 - [ ] add better error reporting

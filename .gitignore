@@ -1,5 +1,5 @@
 *.wav
 target
-.vscode/*.*
+.vscode
 *.lock
 test.*
