@@ -23,6 +23,7 @@ Bleeperpreter is an interpreter for a simple language that can be used to genera
 - clone this repo:
 ```bash
 git clone https://github.com/p6nj/bleeperpreter.git
+cd bleeperpreter
 ```
 - cd into the Wave implementation:
 ```bash
