@@ -21,7 +21,7 @@ pub struct Track {
 impl Channel {
     pub(crate) fn generator(&self) -> Result<impl Fn(NonZeroUsize, u8, u8, u8) -> Vec<f32>> {
         let func = self.signal.clone().0.bind2("t", "f")?;
-        let notes = self.notes.set.len() as u8;
+        let notes = self.notes.set;
         let tuning = self.tuning;
         Ok(
             move |len: NonZeroUsize, n: u8, octave: u8, volume: u8| -> Vec<f32> {

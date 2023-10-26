@@ -35,7 +35,7 @@ impl<'de> Deserialize<'de> for Notes {
                     .ok_or_else(|| Error::invalid_length(1, &self))?;
                 let score = Atom::parse(score_str, &set)
                     .map_err(|err| Error::custom(format!("Syntax error: {}", err.to_string())))?;
-                Ok(Self::Value::new(set, score))
+                Ok(Self::Value::new(set.len() as u8, score))
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
@@ -84,7 +84,7 @@ impl<'de> Deserialize<'de> for Notes {
                 }
                 let set = set.ok_or_else(|| Error::missing_field("set"))?;
                 let score = score.ok_or_else(|| Error::missing_field("score"))?;
-                Ok(Self::Value::new(set, score))
+                Ok(Self::Value::new(set.len() as u8, score))
             }
         }
 

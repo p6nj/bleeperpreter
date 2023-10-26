@@ -8,7 +8,7 @@ mod iter;
 
 #[derive(new, PartialEq, Debug, Clone)]
 pub struct Notes {
-    pub set: String,
+    pub set: u8,
     pub(crate) score: Vec<Atom>,
 }
 

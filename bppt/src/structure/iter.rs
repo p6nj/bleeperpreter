@@ -25,9 +25,7 @@ impl Iterator for FlattenedNoteIterator {
                     self.0.append(&mut v);
                 }
                 Some(Atom::Tuplet(v)) => {
-                    let mut v = Notes::new(String::new(), v)
-                        .flat_iter()
-                        .collect::<Vec<Atom>>();
+                    let mut v = Notes::new(0, v).flat_iter().collect::<Vec<Atom>>();
                     let length = v.len();
                     v = v
                         .iter()
