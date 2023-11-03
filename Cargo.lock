@@ -128,7 +128,7 @@ checksum = "b4682ae6287fcf752ecaabbfcc7b6f9b72aa33933dc23a554d853aea8eea8635"
 
 [[package]]
 name = "bppt"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "derive-new",

@@ -58,7 +58,7 @@ Would you like to use this music language for something else ? Use the `Notes` o
 Put the `Notes` in a [`serde`](https://serde.rs/)-compatible deserializable structure, call your favorite deserializer ([`serde_json`](https://crates.io/crates/serde_json), [`basic-toml`](https://crates.io/crates/basic-toml)...) and build your own way of rendering notes with the `flat_iter` function.
 
 ## TODO
-- [ ] add documentation
+- [x] add documentation
 - [ ] publish to crates.io
 - [ ] add better error reporting
 - [ ] switch `bppt-wav` file input type to `toml`
