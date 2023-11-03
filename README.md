@@ -1,8 +1,7 @@
 <img src="https://raw.githubusercontent.com/p6nj/bleeperpreter/main/icon/iconx4.png?sanitize=true" alt="bppt logo" align="right">
 
-<!-- [![Crates.io](https://img.shields.io/crates/v/bleeperpreter.svg)](https://crates.io/crates/bleeperpreter)
-[![Docs.rs](https://docs.rs/bleeperpreter/badge.svg)](https://docs.rs/bleeperpreter) -->
-[![dependency status](https://deps.rs/repo/github/p6nj/bleeperpreter/status.svg)](https://deps.rs/repo/github/p6nj/bleeperpreter)
+[![Crates.io](https://img.shields.io/crates/v/bppt.svg)](https://crates.io/crates/bppt)
+[![Docs.rs](https://docs.rs/bppt/badge.svg)](https://docs.rs/bppt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 # Bleeperpreter <!-- omit in toc -->
@@ -60,5 +59,6 @@ Put the `Notes` in a [`serde`](https://serde.rs/)-compatible deserializable stru
 ## TODO
 - [x] add documentation
 - [x] publish to crates.io
+- [ ] make a README for both crates
 - [ ] add better error reporting
 - [ ] switch `bppt-wav` file input type to `toml`
