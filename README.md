@@ -59,6 +59,6 @@ Put the `Notes` in a [`serde`](https://serde.rs/)-compatible deserializable stru
 
 ## TODO
 - [x] add documentation
-- [ ] publish to crates.io
+- [x] publish to crates.io
 - [ ] add better error reporting
 - [ ] switch `bppt-wav` file input type to `toml`
