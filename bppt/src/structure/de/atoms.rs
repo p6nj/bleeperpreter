@@ -39,7 +39,7 @@ fn octave(i: &str) -> LeResult {
             verify(preceded(char(OCTAVE), u8), |n| NonZeroU8::new(*n).is_some()),
             NonZeroU8::new,
         ),
-        |n| R::Ok(Atom::Octave(n)),
+        |n| R::Ok(Atom::O(n)),
     )(i)
 }
 
@@ -49,7 +49,7 @@ fn length(i: &str) -> LeResult {
             verify(preceded(char(LENGTH), u8), |n| NonZeroU8::new(*n).is_some()),
             NonZeroU8::new,
         ),
-        |n| R::Ok(Atom::Length(n)),
+        |n| R::Ok(Atom::L(n)),
     )(i)
 }
 
@@ -59,7 +59,7 @@ fn volume(i: &str) -> LeResult {
 
 fn note<'a>(notes: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, Atom> {
     map_res(one_of(notes), move |c| {
-        R::Ok(Atom::Note(
+        R::Ok(Atom::N(
             notes.find(c).unwrap() as u8,
             NonZeroUsize::new(1).unwrap(),
         ))
@@ -71,19 +71,19 @@ fn rest(i: &str) -> LeResult {
 }
 
 fn octaveincr(i: &str) -> LeResult {
-    value(Atom::OctaveIncr, char(OCTAVEINCR))(i)
+    value(Atom::OIncr, char(OCTAVEINCR))(i)
 }
 
 fn octavedecr(i: &str) -> LeResult {
-    value(Atom::OctaveDecr, char(OCTAVEDECR))(i)
+    value(Atom::ODecr, char(OCTAVEDECR))(i)
 }
 
 fn lengthincr(i: &str) -> LeResult {
-    value(Atom::LengthIncr, char(LENGTHINCR))(i)
+    value(Atom::LIncr, char(LENGTHINCR))(i)
 }
 
 fn lengthdecr(i: &str) -> LeResult {
-    value(Atom::LengthDecr, char(LENGTHDECR))(i)
+    value(Atom::LDecr, char(LENGTHDECR))(i)
 }
 
 fn volumeincr(i: &str) -> LeResult {

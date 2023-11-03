@@ -15,12 +15,12 @@ impl Decoder {
             .flat_iter()
             .map(|atom| {
                 match atom {
-                    Atom::Octave(o) => self.octave = u8::from(o) - 1,
-                    Atom::Length(l) => {
+                    Atom::O(o) => self.octave = u8::from(o) - 1,
+                    Atom::L(l) => {
                         self.length = l;
                     }
                     Atom::V(v) => self.volume = v,
-                    Atom::Note(n, tup) => {
+                    Atom::N(n, tup) => {
                         self.tup = tup;
                         let length = self.real_length()?;
                         if length != 0 {
@@ -36,23 +36,23 @@ impl Decoder {
                         self.tup = tup;
                         return Ok(Some(vec![0f32; self.real_length()?]));
                     }
-                    Atom::OctaveIncr => self.octave += 1,
-                    Atom::OctaveDecr => self.octave -= 1,
+                    Atom::OIncr => self.octave += 1,
+                    Atom::ODecr => self.octave -= 1,
                     Atom::VIncr => self.volume += 1,
                     Atom::VDecr => self.volume -= 1,
-                    Atom::LengthIncr => {
+                    Atom::LIncr => {
                         self.length = self
                             .length
                             .checked_mul(NonZeroU8::new(2).unwrap())
                             .with_context(|| {
-                                format!("Length overflow, already at length {}", self.length)
+                                format!("L overflow, already at length {}", self.length)
                             })?;
                     }
-                    Atom::LengthDecr => {
+                    Atom::LDecr => {
                         self.length =
                             NonZeroU8::new(u8::from(self.length) / NonZeroU8::new(2).unwrap())
                                 .with_context(|| {
-                                    format!("Length underflow, already at length {}", self.length)
+                                    format!("L underflow, already at length {}", self.length)
                                 })?;
                     }
                     Atom::Loop(_, _) | Atom::Tuplet(_) => unreachable!(

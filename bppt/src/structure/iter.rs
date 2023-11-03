@@ -1,6 +1,7 @@
 use super::*;
 
 impl Notes {
+    /// Iter through non-wrapper note atoms only (no loop / tuplet...) by flattening their vectors and applying transformations on the atoms they contain.
     pub fn flat_iter(&self) -> FlattenedNoteIterator {
         FlattenedNoteIterator(self.score.iter().rev().cloned().collect::<Vec<Atom>>())
     }
@@ -30,8 +31,8 @@ impl Iterator for FlattenedNoteIterator {
                     v = v
                         .iter()
                         .map(|atom| {
-                            if let Atom::Note(n, tup) = atom {
-                                return Atom::Note(
+                            if let Atom::N(n, tup) = atom {
+                                return Atom::N(
                                     *n,
                                     tup.saturating_mul(NonZeroUsize::new(length).unwrap()),
                                 );

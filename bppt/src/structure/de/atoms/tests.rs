@@ -4,14 +4,14 @@ use crate::structure::Atom;
 #[test]
 fn octave() {
     assert_eq!(
-        Ok(("", Atom::Octave(NonZeroU8::new(2).unwrap()))),
+        Ok(("", Atom::O(NonZeroU8::new(2).unwrap()))),
         super::octave(&format!("{OCTAVE}2"))
     );
 }
 #[test]
 fn length() {
     assert_eq!(
-        Ok(("", Atom::Length(std::num::NonZeroU8::new(4).unwrap()))),
+        Ok(("", Atom::L(std::num::NonZeroU8::new(4).unwrap()))),
         super::length(&format!("{LENGTH}4"))
     );
 }
@@ -25,7 +25,7 @@ fn volume() {
 #[test]
 fn note() {
     assert_eq!(
-        Ok(("", Atom::Note(2, NonZeroUsize::new(1).unwrap()))),
+        Ok(("", Atom::N(2, NonZeroUsize::new(1).unwrap()))),
         super::note("abcde")("c")
     );
 }
@@ -39,28 +39,28 @@ fn rest() {
 #[test]
 fn octave_incr() {
     assert_eq!(
-        Ok(("", Atom::OctaveIncr)),
+        Ok(("", Atom::OIncr)),
         super::octaveincr(&format!("{OCTAVEINCR}"))
     );
 }
 #[test]
 fn octave_decr() {
     assert_eq!(
-        Ok(("", Atom::OctaveDecr)),
+        Ok(("", Atom::ODecr)),
         super::octavedecr(&format!("{OCTAVEDECR}"))
     );
 }
 #[test]
 fn length_incr() {
     assert_eq!(
-        Ok(("", Atom::LengthIncr)),
+        Ok(("", Atom::LIncr)),
         super::lengthincr(&format!("{LENGTHINCR}"))
     );
 }
 #[test]
 fn length_decr() {
     assert_eq!(
-        Ok(("", Atom::LengthDecr)),
+        Ok(("", Atom::LDecr)),
         super::lengthdecr(&format!("{LENGTHDECR}"))
     );
 }
@@ -86,7 +86,7 @@ fn loop_() {
             "",
             Atom::Loop(
                 NonZeroU16::new(2).unwrap(),
-                vec![Atom::Note(2, NonZeroUsize::new(1).unwrap()); 3]
+                vec![Atom::N(2, NonZeroUsize::new(1).unwrap()); 3]
             )
         )),
         super::r#loop("abcde")(&input)
@@ -97,7 +97,7 @@ fn loop_() {
             "",
             Atom::Loop(
                 NonZeroU16::new(45).unwrap(),
-                vec![Atom::Note(2, NonZeroUsize::new(1).unwrap()); 3]
+                vec![Atom::N(2, NonZeroUsize::new(1).unwrap()); 3]
             )
         )),
         super::r#loop("abcde")(&input)
@@ -109,7 +109,7 @@ fn tuplet() {
     assert_eq!(
         Ok((
             "",
-            Atom::Tuplet(vec![Atom::Note(2, NonZeroUsize::new(1).unwrap()); 3])
+            Atom::Tuplet(vec![Atom::N(2, NonZeroUsize::new(1).unwrap()); 3])
         )),
         super::tuplet("abcde")(&input)
     );
