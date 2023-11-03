@@ -2,6 +2,9 @@
 name = "bppt-wav"
 version = "0.1.0"
 edition = "2021"
+description = "A custom MML interpreter"
+authors = ["Breval Ferrari <breee@duck.com>"]
+license = "MIT"
 
 [lib]
 name = "bppt_wav"

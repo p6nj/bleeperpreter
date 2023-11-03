@@ -2,8 +2,9 @@
 name = "bppt"
 version = "0.2.4"
 edition = "2021"
-description = "A custom MML interpreter"
+description = "A custom MML interpreting framework"
 authors = ["Breval Ferrari <breee@duck.com>"]
+license = "MIT"
 
 [dependencies]
 anyhow = "1.0"
