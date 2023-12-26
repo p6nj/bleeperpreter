@@ -17,13 +17,13 @@ path = "src/bin/cli.rs"
 [dependencies]
 anyhow = "1.0"
 bppt = { version = "0.2.4" }
-clap = { version = "4.3.21", features = ["derive"] }
-derive-new = "0.5"
+clap = { version = "4.4", features = ["derive"] }
+derive-new = "0.6"
 dirs = "5.0"
 hound = "3.5"
-lazy-regex = { version = "3.0.1", features = ["perf"] }
+lazy-regex = { version = "3.1", features = ["perf"] }
 meval = { version = "0.2", features = ["serde"] }
-rayon = "1.7"
+rayon = "1.8"
 rodio = { version = "0.17", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
