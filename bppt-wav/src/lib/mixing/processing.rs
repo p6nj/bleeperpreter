@@ -7,7 +7,7 @@ impl structure::Track {
     pub(super) fn process(&mut self) -> Result<Vec<Samples>> {
         self.channels
             .par_iter_mut()
-            .map(|channel| -> Result<Samples> { Ok(channel.process(self.bpm)?) })
+            .map(|channel| -> Result<Samples> { channel.process(self.bpm) })
             .collect::<Result<Vec<Samples>>>()
     }
 }

@@ -17,7 +17,7 @@ path = "src/bin/cli.rs"
 [dependencies]
 anyhow = "1.0"
 bppt = { version = "0.2.4" }
-clap = { version = "4.4", features = ["derive"] }
+clap = { version = "4.5.0", features = ["derive"] }
 derive-new = "0.6"
 dirs = "5.0"
 hound = "3.5"

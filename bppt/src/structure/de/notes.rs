@@ -34,7 +34,7 @@ impl<'de> Deserialize<'de> for Notes {
                     .next_element()?
                     .ok_or_else(|| Error::invalid_length(1, &self))?;
                 let score = Atom::parse(score_str, &set)
-                    .map_err(|err| Error::custom(format!("Syntax error: {}", err.to_string())))?;
+                    .map_err(|err| Error::custom(format!("Syntax error: {}", err)))?;
                 Ok(Self::Value::new(set.len() as u8, score))
             }
 
@@ -75,9 +75,7 @@ impl<'de> Deserialize<'de> for Notes {
                                     }
                                     .as_str(),
                                 )
-                                .map_err(|err| {
-                                    Error::custom(format!("Syntax error: {}", err.to_string()))
-                                })?,
+                                .map_err(|err| Error::custom(format!("Syntax error: {}", err)))?,
                             );
                         }
                     }

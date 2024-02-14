@@ -1,5 +1,5 @@
 use anyhow::Result;
-use bppt_wav::{export, play, Signal, Track};
+use bppt_wav::{export, play, Channel, Signal, Track};
 use clap::{arg, Parser, Subcommand};
 use meval::Expr;
 use serde_json::from_str;
@@ -35,6 +35,9 @@ enum Command {
         /// Signal expression
         #[arg(value_name = "EXPRESSION")]
         expr: String,
+        /// Track
+        #[arg(value_name = "TRACK")]
+        track: Option<String>,
     },
 }
 
@@ -48,11 +51,19 @@ impl Cli {
             Command::Play { r#in } => {
                 play(from_str::<Track>(read_to_string(r#in)?.as_str())?.mix()?)
             }
-            Command::Try { expr } => play(
+            Command::Try { expr, track } => play(
                 {
                     let mut custom = Track::default();
-                    custom.channels.iter_mut().next().unwrap().signal =
-                        Signal(Expr::from_str(&expr)?);
+                    if let Some(s) = track {
+                        custom.channels = vec![Channel::new(
+                            Signal(Expr::from_str(&expr)?),
+                            from_str(&format!(r#"{{"set": "aAbcCdDefFgG", "score": "{}"}}"#, s))?,
+                            442.0,
+                        )]
+                    } else {
+                        custom.channels.iter_mut().next().unwrap().signal =
+                            Signal(Expr::from_str(&expr)?);
+                    };
                     custom
                 }
                 .mix()?,
