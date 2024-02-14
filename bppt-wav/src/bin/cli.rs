@@ -56,13 +56,13 @@ impl Cli {
                     let mut custom = Track::default();
                     if let Some(s) = track {
                         custom.channels = vec![Channel::new(
-                            Signal(Expr::from_str(&expr)?),
+                            Signal(Expr::from_str(&expr).expect("can't parse expression")),
                             from_str(&format!(r#"{{"set": "aAbcCdDefFgG", "score": "{}"}}"#, s))?,
                             442.0,
                         )]
                     } else {
                         custom.channels.iter_mut().next().unwrap().signal =
-                            Signal(Expr::from_str(&expr)?);
+                            Signal(Expr::from_str(&expr).expect("can't parse expression"));
                     };
                     custom
                 }

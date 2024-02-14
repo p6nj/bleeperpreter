@@ -1,6 +1,6 @@
 [package]
 name = "bppt-wav"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "A custom MML interpreter"
 authors = ["Breval Ferrari <breee@duck.com>"]
@@ -22,7 +22,7 @@ derive-new = "0.6"
 dirs = "5.0"
 hound = "3.5"
 lazy-regex = { version = "3.1", features = ["perf"] }
-meval = { version = "0.2", features = ["serde"] }
+meval = { git = "https://github.com/alexantoshuk/meval-rs" }
 rayon = "1.8"
 rodio = { version = "0.17", default-features = false }
 serde = { version = "1.0", features = ["derive"] }

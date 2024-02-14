@@ -20,7 +20,12 @@ pub struct Track {
 
 impl Channel {
     pub(crate) fn generator(&self) -> Result<impl Fn(NonZeroUsize, u8, u8, u8) -> Vec<f32>> {
-        let func = self.signal.clone().0.bind2("t", "f")?;
+        let func = self
+            .signal
+            .clone()
+            .0
+            .bind2("t", "f")
+            .expect("unknown variable in the expression");
         let notes = self.notes.set;
         let tuning = self.tuning;
         Ok(
