@@ -24,6 +24,6 @@ hound = "3.5"
 lazy-regex = { version = "3.1", features = ["perf"] }
 meval = { version = "0.2", features = ["serde"] }
 rayon = "1.8"
-rodio = { version = "0.17", default-features = false }
+rodio = { version = "0.19.0", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
